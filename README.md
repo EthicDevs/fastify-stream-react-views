@@ -1,44 +1,72 @@
-# `typescript-library-starter`
+# `ethicdevs/fastify-stream-react-views`
 
-[![NPM](https://img.shields.io/npm/v/typescript-library-starter?color=red)](https://www.npmjs.com/package/typescript-library-starter)
-[![MIT License](https://img.shields.io/github/license/47ng/typescript-library-starter.svg?color=blue)](https://github.com/47ng/typescript-library-starter/blob/master/LICENSE)
-[![Travis CI Build](https://img.shields.io/travis/com/47ng/typescript-library-starter.svg)](https://travis-ci.com/47ng/typescript-library-starter)
-[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=47ng/typescript-library-starter)](https://dependabot.com)
-[![Average issue resolution time](https://isitmaintained.com/badge/resolution/47ng/typescript-library-starter.svg)](https://isitmaintained.com/project/47ng/typescript-library-starter)
-[![Number of open issues](https://isitmaintained.com/badge/open/47ng/typescript-library-starter.svg)](https://isitmaintained.com/project/47ng/typescript-library-starter)
+[![NPM](https://img.shields.io/npm/v/@ethicdevs/fastify-stream-react-views?color=red)](https://www.npmjs.com/package/@ethicdevs/fastify-stream-react-views)
+[![MIT License](https://img.shields.io/github/license/ethicdevs/fastify-stream-react-views.svg?color=blue)](https://github.com/ethicdevs/fastify-stream-react-views/blob/master/LICENSE)
 
-Template repository for TypeScript libraries.
+A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, no CSR/hydration yet?)
 
 ## Installation
 
-✂️---
-_Cut here_
-
-1. [Use this repository as a template](https://github.com/47ng/typescript-library-starter/generate) to create your own.
-2. Replace all mentions of `typescript-library-starter` with the name
-   of your package.
-3. Setup Travis CI by adding an NPM deploy token and a Slack channel token:
-
-```zsh
-# Copy your NPM deploy token to clipboard, then:
-$ travis encrypt $(pbpaste) --add deploy.api_key --com
-
-# Copy your Slack channel token to clipboard, then:
-$ travis encrypt $(pbpaste) --add notifications.slack.rooms --com
-```
-
---- ✂️
-
 ```shell
-$ yarn add typescript-library-starter
+$ yarn add @ethicdevs/fastify-stream-react-views
 # or
-$ npm i typescript-library-starter
+$ npm i @ethicdevs/fastify-stream-react-views
 ```
 
 ## Usage
 
-## Configuration
+```ts
+// src/server.ts
+import fastify from "fastify";
+import streamReactViews from "@ethicdevs/fastify-stream-react-views";
+
+function main() {
+  const app = fastify();
+  app.register(streamReactViews, {
+    viewsFolder: path.resolve(path.join(__dirname, 'views'), // required
+    commonProps: { // optional
+      foo: 'bar',
+      baz: 1,
+      quxx: false,
+      counts: [10, 20, 30, 40],
+      callback: () => true,
+      obj: {
+        subkeys: true,
+      }
+    }
+  });
+
+  app.get('/', (_, reply) => {
+    return reply.streamReactView('home', {
+      hello: 'world',
+      punctuation: '!'
+    });
+  });
+
+  app.listen(...); // as usual
+}
+
+main();
+```
+
+```tsx
+import React, { VFC } from "react";
+
+type HomeViewProps = {
+  hello: string;
+  punctuation?: "." | "!" | "?";
+};
+
+export function HomeView({ hello, punctuation }: HomeViewProps) {
+  return (
+    <>
+      Hello, {hello}
+      {punctuation || "!"}
+    </>
+  );
+}
+```
 
 ## License
 
-[MIT](https://github.com/47ng/typescript-library-starter/blob/master/LICENSE) - Made with ❤️ by [François Best](https://francoisbest.com) - [Donations welcome](https://paypal.me/francoisbest?locale.x=fr_FR) 🙏
+[MIT](https://github.com/ethicdevs/fastify-stream-react-views/blob/master/LICENSE)
