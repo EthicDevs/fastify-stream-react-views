@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.DS_Store
 yarn-error.log
 
 # Docker containers with persistance

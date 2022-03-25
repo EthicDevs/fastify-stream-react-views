@@ -3,11 +3,14 @@
     "baseUrl": ".",
     "target": "es2018",
     "module": "commonjs",
+    "jsx": "react",
     "lib": [],
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": { "*": ["types/*"] },
+    "paths": {
+      "*": ["types/*"]
+    },
 
     // Strict Type-Checking Options
     "strict": true,
@@ -30,5 +33,5 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "exclude": ["./src/**/*.test.ts", "./dist", "./node_modules"]
+  "exclude": ["./src/**/*.test.ts", "./dist", "./node_modules", "./example"]
 }

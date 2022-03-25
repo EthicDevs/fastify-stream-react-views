@@ -1,6 +1,9 @@
-**/*.test.ts
-tsconfig.json
-nodemon.json
 .env
+.env.example
+.prettierrc
 .volumes/
+**/*.test.ts
+example/
+nodemon.json
+tsconfig.json
 yarn-error.log
