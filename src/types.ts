@@ -46,4 +46,4 @@ export type StreamReactViewFunction = (
   view: string,
   props?: Record<string, unknown>,
   initialViewCtx?: Record<string, unknown>,
-) => Promise<NodeJS.ReadableStream>;
+) => Promise<FastifyReply>;

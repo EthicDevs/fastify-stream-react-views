@@ -27,6 +27,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           const endpointStream = new stream.PassThrough();
 
           this.type(HTML_MIME_TYPE);
+          this.raw.pipe(endpointStream);
           endpointStream.write(HTML_DOCTYPE);
 
           const viewProps = {
@@ -49,7 +50,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
             const { viewCtx } = viewProps;
 
             if (viewCtx?.redirectUrl != null) {
-              this.redirect(301, viewCtx.redirectUrl);
+              resolve(this.redirect(301, viewCtx.redirectUrl));
               endpointStream.end();
               return;
             }
@@ -58,8 +59,9 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
             if (endpointStream.readableEnded === false) {
               endpointStream.end();
-              resolve(endpointStream); // finally resolve the stream
             }
+
+            resolve(this.send(endpointStream));
           });
         });
       }
