@@ -58,9 +58,8 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
             if (endpointStream.readableEnded === false) {
               endpointStream.end();
+              resolve(endpointStream); // finally resolve the stream
             }
-
-            resolve(reactViewStream);
           });
         });
       }
