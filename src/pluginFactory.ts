@@ -27,7 +27,6 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           const endpointStream = new stream.PassThrough();
 
           this.type(HTML_MIME_TYPE);
-          this.raw.pipe(endpointStream);
           endpointStream.write(HTML_DOCTYPE);
 
           const viewProps = {
