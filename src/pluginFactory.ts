@@ -24,50 +24,50 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
       function streamReactView(view, props, initialViewCtx) {
         return new Promise((resolve, reject) => {
-          const endpointStream = new stream.PassThrough();
+          try {
+            const endpointStream = new stream.PassThrough();
 
-          this.type(HTML_MIME_TYPE);
-          endpointStream.write(HTML_DOCTYPE);
+            this.type(HTML_MIME_TYPE);
+            endpointStream.pipe(this.raw);
+            endpointStream.write(HTML_DOCTYPE);
 
-          const viewProps = {
-            ...options?.commonProps,
-            ...props,
-            // \/ ensure last so its not overridden by props/commonProps
-            viewCtx: <ViewContextBase>{
-              headers: this.request.headers,
-              ...initialViewCtx,
-            },
-          };
+            const viewProps = {
+              ...options?.commonProps,
+              ...props,
+              // \/ ensure last so its not overridden by props/commonProps
+              viewCtx: <ViewContextBase>{
+                headers: this.request.headers,
+                ...initialViewCtx,
+              },
+            };
 
-          const reactViewStream: NodeJS.ReadableStream = renderToStream(
-            path.resolve(path.join(options.viewsFolder, view)),
-            viewProps,
-          );
+            const reactViewStream: NodeJS.ReadableStream = renderToStream(
+              path.resolve(path.join(options.viewsFolder, view)),
+              viewProps,
+            );
 
-          reactViewStream.pipe(endpointStream, { end: false });
+            reactViewStream.pipe(endpointStream, { end: false });
+            reactViewStream.on("end", () => {
+              const { viewCtx } = viewProps;
 
-          reactViewStream.on("error", (...args: unknown[]) => {
-            console.log("error in stream generation:", ...args);
-            reject(new Error("error in stream generation"));
-          });
+              if (viewCtx?.redirectUrl != null) {
+                resolve(this.redirect(301, viewCtx.redirectUrl));
+                if (endpointStream.readableEnded === false) {
+                  endpointStream.end();
+                }
+                return;
+              }
 
-          reactViewStream.on("end", () => {
-            const { viewCtx } = viewProps;
-
-            if (viewCtx?.redirectUrl != null) {
-              resolve(this.redirect(301, viewCtx.redirectUrl));
-              endpointStream.end();
-              return;
-            }
-
-            this.status(viewCtx?.status || 200);
-
-            if (endpointStream.readableEnded === false) {
-              endpointStream.end();
-            }
-
-            resolve(this.send(endpointStream));
-          });
+              this.status(viewCtx?.status || 200);
+              resolve(this.send(endpointStream));
+              if (endpointStream.readableEnded === false) {
+                endpointStream.end();
+              }
+            });
+          } catch (err) {
+            console.log("Error in streamReactView:", (err as Error).message);
+            reject(err);
+          }
         });
       }
     ));
