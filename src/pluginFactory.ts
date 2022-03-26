@@ -3,7 +3,7 @@ import path from "path";
 import stream from "stream";
 
 // 3rd party - fastify std
-import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 
 // lib
@@ -19,31 +19,36 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
   async (fastify, options) => {
     fastify.decorateReply(
       "streamReactView",
-      function (view: string, props: { [x: string]: unknown }) {
-        const endpointStream = new stream.PassThrough();
+      function (
+        view: string,
+        props: { [x: string]: unknown },
+      ): Promise<FastifyReply> {
+        return new Promise<FastifyReply>((resolve) => {
+          const endpointStream = new stream.PassThrough();
 
-        this.type(HTML_MIME_TYPE);
-        endpointStream.write(HTML_DOCTYPE);
+          this.type(HTML_MIME_TYPE);
+          endpointStream.write(HTML_DOCTYPE);
 
-        const viewCtx: ViewContextBase = {
-          headers: this.request.headers,
-        };
+          const viewCtx: ViewContextBase = {
+            headers: this.request.headers,
+          };
 
-        const reactViewStream: NodeJS.ReadableStream = renderToStream(
-          path.resolve(path.join(options.viewsFolder, view)),
-          { ...options?.commonProps, props, viewCtx },
-        );
+          const reactViewStream: NodeJS.ReadableStream = renderToStream(
+            path.resolve(path.join(options.viewsFolder, view)),
+            { ...options?.commonProps, props, viewCtx },
+          );
 
-        reactViewStream.pipe(endpointStream, { end: false });
-        reactViewStream.on("end", () => {
-          this.status(viewCtx?.status || 200);
-          if (viewCtx?.redirectUrl != null) {
-            this.redirect(301, viewCtx.redirectUrl);
+          reactViewStream.pipe(endpointStream, { end: false });
+          reactViewStream.on("end", () => {
+            this.status(viewCtx?.status || 200);
+
+            if (viewCtx?.redirectUrl != null) {
+              resolve(this.redirect(301, viewCtx.redirectUrl));
+            }
+
             endpointStream.end();
-            return;
-          }
-          this.send(endpointStream);
-          endpointStream.end();
+            resolve(this.send(endpointStream));
+          });
         });
       },
     );
