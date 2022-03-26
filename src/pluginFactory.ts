@@ -55,14 +55,13 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
             }
 
             this.status(viewCtx?.status || 200);
-            this.send(endpointStream);
 
             if (endpointStream.readableEnded === false) {
               endpointStream.end();
             }
-          });
 
-          resolve(reactViewStream);
+            resolve(reactViewStream);
+          });
         });
       }
     ));
