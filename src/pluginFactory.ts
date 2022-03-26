@@ -3,7 +3,7 @@ import path from "path";
 import stream from "stream";
 
 // 3rd party - fastify std
-import type { FastifyPluginAsync, FastifyReply } from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import fp from "fastify-plugin";
 
 // lib
@@ -29,16 +29,14 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           this.type(HTML_MIME_TYPE);
           endpointStream.write(HTML_DOCTYPE);
 
-          const viewCtx: ViewContextBase = {
-            headers: this.request.headers,
-            ...initialViewCtx,
-          };
-
           const viewProps = {
             ...options?.commonProps,
             ...props,
             // \/ ensure last so its not overridden by props/commonProps
-            viewCtx,
+            viewCtx: <ViewContextBase>{
+              headers: this.request.headers,
+              ...initialViewCtx,
+            },
           };
 
           const reactViewStream: NodeJS.ReadableStream = renderToStream(
@@ -48,7 +46,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
           reactViewStream.pipe(endpointStream, { end: false });
           reactViewStream.on("end", () => {
-            this.status(viewCtx?.status || 200);
+            const { viewCtx } = viewProps;
 
             if (viewCtx?.redirectUrl != null) {
               this.redirect(301, viewCtx.redirectUrl);
@@ -56,7 +54,9 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               return;
             }
 
+            this.status(viewCtx?.status || 200);
             this.send(endpointStream);
+
             endpointStream.end();
           });
 
