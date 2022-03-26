@@ -23,7 +23,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
   async (fastify, options) => {
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
       function streamReactView(view, props, initialViewCtx) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const endpointStream = new stream.PassThrough();
 
           this.type(HTML_MIME_TYPE);
@@ -45,6 +45,12 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           );
 
           reactViewStream.pipe(endpointStream, { end: false });
+
+          reactViewStream.on("error", (...args: unknown[]) => {
+            console.log("error in stream generation:", ...args);
+            reject(new Error("error in stream generation"));
+          });
+
           reactViewStream.on("end", () => {
             const { viewCtx } = viewProps;
 
