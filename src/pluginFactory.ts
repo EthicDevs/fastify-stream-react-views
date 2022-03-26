@@ -21,7 +21,8 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
       "streamReactView",
       function (
         view: string,
-        props: { [x: string]: unknown },
+        props: { [x: string]: unknown } = {},
+        initialViewCtx?: ViewContextBase,
       ): Promise<FastifyReply> {
         return new Promise<FastifyReply>((resolve) => {
           const endpointStream = new stream.PassThrough();
@@ -31,6 +32,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
           const viewCtx: ViewContextBase = {
             headers: this.request.headers,
+            ...initialViewCtx,
           };
 
           const reactViewStream: NodeJS.ReadableStream = renderToStream(
@@ -38,7 +40,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
             { ...options?.commonProps, props, viewCtx },
           );
 
-          reactViewStream.pipe(endpointStream, { end: false });
+          reactViewStream.pipe(endpointStream);
           reactViewStream.on("end", () => {
             this.status(viewCtx?.status || 200);
 
@@ -46,7 +48,6 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               resolve(this.redirect(301, viewCtx.redirectUrl));
             }
 
-            endpointStream.end();
             resolve(this.send(endpointStream));
           });
         });
