@@ -39,9 +39,11 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           this.status(viewCtx?.status || 200);
           if (viewCtx?.redirectUrl != null) {
             this.redirect(301, viewCtx.redirectUrl);
+            endpointStream.end();
             return;
           }
           this.send(endpointStream);
+          endpointStream.end();
         });
       },
     );
