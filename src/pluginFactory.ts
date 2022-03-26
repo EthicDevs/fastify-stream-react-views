@@ -7,7 +7,11 @@ import type { FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 
 // lib
-import type { StreamReactViewPluginOptions, ViewContextBase } from "./types";
+import type {
+  StreamReactViewFunction,
+  StreamReactViewPluginOptions,
+  ViewContextBase,
+} from "./types";
 import {
   FASTIFY_VERSION_TARGET,
   HTML_DOCTYPE,
@@ -17,14 +21,9 @@ import { renderToStream } from "./renderToStream";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
-    fastify.decorateReply(
-      "streamReactView",
-      function (
-        view: string,
-        props: { [x: string]: unknown } = {},
-        initialViewCtx?: ViewContextBase,
-      ): Promise<FastifyReply> {
-        return new Promise<FastifyReply>((resolve) => {
+    fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
+      function streamReactView(view, props, initialViewCtx) {
+        return new Promise((resolve) => {
           const endpointStream = new stream.PassThrough();
 
           this.type(HTML_MIME_TYPE);
@@ -35,24 +34,36 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
             ...initialViewCtx,
           };
 
+          const viewProps = {
+            ...options?.commonProps,
+            ...props,
+            // \/ ensure last so its not overridden by props/commonProps
+            viewCtx,
+          };
+
           const reactViewStream: NodeJS.ReadableStream = renderToStream(
             path.resolve(path.join(options.viewsFolder, view)),
-            { ...options?.commonProps, props, viewCtx },
+            viewProps,
           );
 
-          reactViewStream.pipe(endpointStream);
+          reactViewStream.pipe(endpointStream, { end: false });
           reactViewStream.on("end", () => {
             this.status(viewCtx?.status || 200);
 
             if (viewCtx?.redirectUrl != null) {
-              resolve(this.redirect(301, viewCtx.redirectUrl));
+              this.redirect(301, viewCtx.redirectUrl);
+              endpointStream.end();
+              return;
             }
 
-            resolve(this.send(endpointStream));
+            this.send(endpointStream);
+            endpointStream.end();
           });
+
+          resolve(reactViewStream);
         });
-      },
-    );
+      }
+    ));
   };
 
 export function makePlugin() {

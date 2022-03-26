@@ -1,3 +1,4 @@
+import { FastifyReply } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
 
 export interface CommonPropsBase {
@@ -39,3 +40,10 @@ export interface ViewContextBase {
   status?: number;
   redirectUrl?: string;
 }
+
+export type StreamReactViewFunction = (
+  this: FastifyReply,
+  view: string,
+  props?: Record<string, unknown>,
+  initialViewCtx?: Record<string, unknown>,
+) => Promise<NodeJS.ReadableStream>;

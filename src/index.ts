@@ -1,13 +1,9 @@
 /* Types */
-import type { ViewContextBase } from "./types";
+import type { StreamReactViewFunction } from "./types";
 declare module "fastify" {
   interface FastifyReply {
     // A reply utility function that stream a React Component as the reply
-    streamReactView(
-      view: string,
-      props?: { [x: string]: unknown },
-      initialViewCtx?: ViewContextBase,
-    ): Promise<FastifyReply>;
+    streamReactView: StreamReactViewFunction;
   }
 }
 
