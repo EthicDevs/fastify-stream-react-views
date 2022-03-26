@@ -1,3 +1,5 @@
+import type { IncomingHttpHeaders } from "node:http";
+
 export interface CommonPropsBase {
   [x: string]:
     | string
@@ -33,9 +35,7 @@ export interface StreamReactViewPluginOptions<
 
 export interface ViewContextBase {
   [x: string]: unknown;
-  headers: {
-    [key: string]: string | number | string[] | undefined;
-  };
+  headers: IncomingHttpHeaders;
   status?: number;
   redirectUrl?: string;
 }

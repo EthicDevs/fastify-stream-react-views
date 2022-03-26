@@ -26,7 +26,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
         endpointStream.write(HTML_DOCTYPE);
 
         const viewCtx: ViewContextBase = {
-          headers: this.getHeaders(),
+          headers: this.request.headers,
         };
 
         const reactViewStream: NodeJS.ReadableStream = renderToStream(

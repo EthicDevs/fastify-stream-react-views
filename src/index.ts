@@ -9,6 +9,8 @@ declare module "fastify" {
   }
 }
 
+export { StreamReactViewPluginOptions, ViewContextBase } from "./types";
+
 /* Register Function */
 import { makePlugin } from "./pluginFactory";
 
