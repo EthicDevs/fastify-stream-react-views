@@ -17,7 +17,9 @@ import {
   HTML_DOCTYPE,
   HTML_MIME_TYPE,
 } from "./constants";
-import { renderToStream } from "./renderToStream";
+import { requireView } from "./requireView";
+import { buildViewWithProps, renderViewToStream } from "./renderViewToStream";
+import { isStyledComponentsAvailable } from "./styledComponentsTest";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -27,9 +29,24 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
           try {
             const endpointStream = new stream.PassThrough();
 
+            // Set correct mime-type on the response
             this.type(HTML_MIME_TYPE);
+
+            // pipe this stream into fastify's raw stream
             endpointStream.pipe(this.raw);
+
+            // Write the html5 doctype
             endpointStream.write(HTML_DOCTYPE);
+
+            let titleStr = options?.appName || "Fastify + React = ❤️";
+            if (props != null && "title" in props && props.title != null) {
+              titleStr = `${props.title} - ${titleStr}`;
+            }
+
+            // Write html/head tags
+            endpointStream.write(
+              `<html><head><title>${titleStr}</title></head><body>`,
+            );
 
             const viewProps = {
               ...options?.commonProps,
@@ -41,13 +58,13 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               },
             };
 
-            const reactViewStream: NodeJS.ReadableStream = renderToStream(
+            const reactView = requireView(
               path.resolve(path.join(options.viewsFolder, view)),
-              viewProps,
             );
 
-            reactViewStream.pipe(endpointStream, { end: false });
-            reactViewStream.on("end", () => {
+            const viewEl = buildViewWithProps(reactView, props);
+
+            const onEndCallback = () => {
               const { viewCtx } = viewProps;
 
               if (viewCtx?.redirectUrl != null) {
@@ -61,9 +78,32 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               this.status(viewCtx?.status || 200);
               resolve(this.send(endpointStream));
               if (endpointStream.readableEnded === false) {
-                endpointStream.end();
+                // Important, close the body & html tags.
+                endpointStream.end("</body></html>");
               }
-            });
+            };
+
+            if (
+              options?.withStyledSSR === true &&
+              isStyledComponentsAvailable()
+            ) {
+              const { ServerStyleSheet } = require("styled-components");
+              const sheet = new ServerStyleSheet();
+              const jsx = sheet.collectStyles(viewEl);
+              const reactViewStream: NodeJS.ReadableStream =
+                renderViewToStream(jsx);
+              const reactViewWithStyledStream =
+                sheet.interleaveWithNodeStream(reactViewStream);
+
+              reactViewWithStyledStream.pipe(endpointStream, { end: false });
+              reactViewWithStyledStream.on("end", onEndCallback);
+            } else {
+              const reactViewStream: NodeJS.ReadableStream =
+                renderViewToStream(viewEl);
+
+              reactViewStream.pipe(endpointStream, { end: false });
+              reactViewStream.on("end", onEndCallback);
+            }
           } catch (err) {
             console.log("Error in streamReactView:", (err as Error).message);
             reject(err);

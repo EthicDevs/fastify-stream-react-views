@@ -1,5 +1,6 @@
 import { FastifyReply } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
+import { VFC } from "react";
 
 export interface CommonPropsBase {
   [x: string]:
@@ -32,6 +33,14 @@ export interface StreamReactViewPluginOptions<
    * common props if both happens to specify the same key.
    */
   commonProps?: C;
+  /**
+   * Enable/Disable supports for styled-components ssr
+   */
+  withStyledSSR?: boolean;
+  /**
+   * Defaut tab page title
+   */
+  appName?: string;
 }
 
 export interface ViewContextBase {
@@ -47,3 +56,9 @@ export type StreamReactViewFunction = (
   props?: Record<string, unknown>,
   initialViewCtx?: Record<string, unknown>,
 ) => Promise<FastifyReply>;
+
+export type ReactView<P> = VFC<
+  P & {
+    ssr: boolean;
+  }
+>;
