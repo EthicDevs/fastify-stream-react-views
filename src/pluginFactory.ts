@@ -18,7 +18,11 @@ import {
   HTML_MIME_TYPE,
 } from "./constants";
 import { requireView } from "./requireView";
-import { buildViewWithProps, renderViewToStream } from "./renderViewToStream";
+import {
+  buildViewWithProps,
+  renderViewToStaticStream,
+  renderViewToStream,
+} from "./renderViewToStream";
 import { isStyledComponentsAvailable } from "./styledComponentsTest";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
@@ -77,6 +81,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
               this.status(viewCtx?.status || 200);
               resolve(this.send(endpointStream));
+
               if (endpointStream.readableEnded === false) {
                 // Important, close the body & html tags.
                 endpointStream.end("</body></html>");
@@ -90,16 +95,15 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               const { ServerStyleSheet } = require("styled-components");
               const sheet = new ServerStyleSheet();
               const jsx = sheet.collectStyles(viewEl);
-              const reactViewStream: NodeJS.ReadableStream =
-                renderViewToStream(jsx);
-              const reactViewWithStyledStream =
-                sheet.interleaveWithNodeStream(reactViewStream);
+              const reactViewWithStyledStream = sheet.interleaveWithNodeStream(
+                renderViewToStream(jsx),
+              );
 
               reactViewWithStyledStream.pipe(endpointStream, { end: false });
               reactViewWithStyledStream.on("end", onEndCallback);
             } else {
               const reactViewStream: NodeJS.ReadableStream =
-                renderViewToStream(viewEl);
+                renderViewToStaticStream(viewEl);
 
               reactViewStream.pipe(endpointStream, { end: false });
               reactViewStream.on("end", onEndCallback);

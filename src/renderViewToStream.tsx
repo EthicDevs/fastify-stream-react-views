@@ -11,6 +11,12 @@ export function buildViewWithProps<P>(
   return <View {...props} ssr />;
 }
 
-export function renderViewToStream(viewEl: JSX.Element): NodeJS.ReadableStream {
+export function renderViewToStaticStream(
+  viewEl: JSX.Element,
+): NodeJS.ReadableStream {
   return ReactDOM.renderToStaticNodeStream(viewEl);
+}
+
+export function renderViewToStream(viewEl: JSX.Element): NodeJS.ReadableStream {
+  return ReactDOM.renderToNodeStream(viewEl);
 }
