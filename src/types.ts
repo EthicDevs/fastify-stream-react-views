@@ -16,6 +16,15 @@ export interface StreamReactViewPluginOptions<
   C extends CommonPropsBase = CommonPropsBase,
 > {
   /**
+   * Defaut tab page title
+   */
+  appName?: string;
+  /**
+   * An hashmap of routes, this is the preferred way to use this module main because
+   * the `viewsFolder` option relies on import/require wizardry.
+   */
+  views?: Record<string, React.VFC>;
+  /**
    * Path to React components to render as views (w/ ext. in /.j|tsx?/i)
    * @example
    * {
@@ -24,7 +33,7 @@ export interface StreamReactViewPluginOptions<
    *   viewsFolder: path.resolve(path.join(__dirname, './views'));
    * }
    */
-  viewsFolder: string;
+  viewsFolder?: string;
   /**
    * An object of common props passed to every View when rendered,
    * the properties does not needs to be serialisable, and thus functions can be
@@ -37,10 +46,6 @@ export interface StreamReactViewPluginOptions<
    * Enable/Disable supports for styled-components ssr
    */
   withStyledSSR?: boolean;
-  /**
-   * Defaut tab page title
-   */
-  appName?: string;
 }
 
 export interface ViewContextBase {

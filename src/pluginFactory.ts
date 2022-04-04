@@ -8,6 +8,7 @@ import fp from "fastify-plugin";
 
 // lib
 import type {
+  ReactView,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
   ViewContextBase,
@@ -27,9 +28,14 @@ import { isStyledComponentsAvailable } from "./styledComponentsTest";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
+    if (options?.views == null && options?.viewsFolder == null) {
+      throw new Error(`You have not provided either a "views" config key or a "viewsFolder" config key.
+Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
+    }
+
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
       function streamReactView(view, props, initialViewCtx) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
           try {
             const endpointStream = new stream.PassThrough();
 
@@ -62,9 +68,31 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               },
             };
 
-            const reactView = requireView(
-              path.resolve(path.join(options.viewsFolder, view)),
-            );
+            let possibleReactViews: ReactView<unknown>[] = [];
+
+            if (
+              options?.views != null &&
+              view in options.views === true &&
+              options.views?.[view] != null
+            ) {
+              possibleReactViews.push(options.views[view]);
+            }
+
+            if (
+              options?.viewsFolder != null &&
+              options.viewsFolder.trim() !== ""
+            ) {
+              const reactView = await requireView(
+                path.resolve(path.join(options.viewsFolder, view)),
+              );
+              possibleReactViews.push(reactView);
+            }
+
+            const reactView = possibleReactViews[0];
+            if (reactView == null) {
+              throw new Error(`Cannot find the requested view "${view}".
+Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
+            }
 
             const viewEl = buildViewWithProps(reactView, props);
 
@@ -100,12 +128,14 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               );
 
               reactViewWithStyledStream.pipe(endpointStream, { end: false });
+              reactViewWithStyledStream.on("error", onEndCallback);
               reactViewWithStyledStream.on("end", onEndCallback);
             } else {
               const reactViewStream: NodeJS.ReadableStream =
                 renderViewToStaticStream(viewEl);
 
               reactViewStream.pipe(endpointStream, { end: false });
+              reactViewStream.on("error", onEndCallback);
               reactViewStream.on("end", onEndCallback);
             }
           } catch (err) {

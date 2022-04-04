@@ -1,6 +1,6 @@
 import { ReactView } from "./types";
 
-export function requireView<P>(viewPath: string): ReactView<P> {
-  const View = require(viewPath);
+export async function requireView<P>(viewPath: string): Promise<ReactView<P>> {
+  const View = await import(viewPath);
   return View as ReactView<P>;
 }
