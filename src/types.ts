@@ -55,11 +55,40 @@ export interface ViewContextBase {
   redirectUrl?: string;
 }
 
+export type HeadTagMeta = {
+  kind: "meta";
+  name: string;
+  content: string;
+};
+
+export type HeadTagMetaCharset = {
+  kind: "meta";
+  charset: string;
+};
+
+export type HeadTagLink = {
+  kind: "link";
+  rel: string;
+  href: string;
+  hreflang?: string;
+  title?: string;
+  type?: string;
+};
+
+export type HeadTag = HeadTagMeta | HeadTagMetaCharset | HeadTagLink;
+
 export type StreamReactViewFunction = (
   this: FastifyReply,
   view: string,
   props?: Record<string, unknown>,
-  initialViewCtx?: Record<string, unknown>,
+  initialViewCtx?: {
+    [x: string]: unknown;
+    head?: HeadTag[];
+    html?: {
+      lang?: string;
+      dir?: string;
+    };
+  },
 ) => Promise<FastifyReply>;
 
 export type ReactView<P> = VFC<

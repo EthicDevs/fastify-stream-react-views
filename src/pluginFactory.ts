@@ -25,6 +25,7 @@ import {
   renderViewToStream,
 } from "./renderViewToStream";
 import { isStyledComponentsAvailable } from "./styledComponentsTest";
+import { getHeadTagsStr, getHtmlTagsStr } from "./helpers";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -53,9 +54,18 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               titleStr = `${props.title} - ${titleStr}`;
             }
 
+            const htmlTagsStr =
+              initialViewCtx?.html == null
+                ? ""
+                : ` ${getHtmlTagsStr(initialViewCtx.html)}`;
+            const headTagsStr =
+              initialViewCtx?.head == null
+                ? ""
+                : getHeadTagsStr(initialViewCtx.head);
+
             // Write html/head tags
             endpointStream.write(
-              `<html><head><title>${titleStr}</title></head><body>`,
+              `<html${htmlTagsStr}><head><title>${titleStr}</title>${headTagsStr}</head><body>`,
             );
 
             const viewProps = {
