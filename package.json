@@ -1,6 +1,6 @@
 {
   "name": "@ethicdevs/fastify-stream-react-views",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, no CSR/hydration yet?) ",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -41,8 +41,8 @@
     "fastify-plugin": "^3.0.1"
   },
   "peerDependencies": {
-    "react": ">=16.8.0",
-    "react-dom": "^16.8.0 || ^17.0.0",
+    "react": ">=17.0.2",
+    "react-dom": ">=17.0.2",
     "styled-components": ">=5.3.5"
   },
   "devDependencies": {
