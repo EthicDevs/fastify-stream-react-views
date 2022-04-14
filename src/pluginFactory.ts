@@ -91,7 +91,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
             const reactView = possibleReactViews[0];
             if (reactView == null) {
               throw new Error(`Cannot find the requested view "${view}".
-Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
+Please verify your "viewsFolder" configured folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
             }
 
             const viewEl = buildViewWithProps(reactView, props);
@@ -100,20 +100,20 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               const { viewCtx } = viewProps;
 
               if (viewCtx?.redirectUrl != null) {
-                resolve(this.redirect(301, viewCtx.redirectUrl));
                 if (endpointStream.readableEnded === false) {
                   endpointStream.end();
                 }
-                return;
+                return resolve(this.redirect(301, viewCtx.redirectUrl));
               }
 
               this.status(viewCtx?.status || 200);
-              resolve(this.send(endpointStream));
 
               if (endpointStream.readableEnded === false) {
                 // Important, close the body & html tags.
                 endpointStream.end("</body></html>");
               }
+
+              return resolve(this.send(endpointStream));
             };
 
             if (
