@@ -11,6 +11,7 @@ import type {
   ReactView,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
+  ViewContext,
   ViewContextBase,
 } from "./types";
 import {
@@ -35,7 +36,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
     }
 
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
-      function streamReactView(view, props, initialViewCtx) {
+      function streamReactView(view, props, viewCtx) {
         return new Promise(async (resolve, reject) => {
           try {
             const endpointStream = new stream.PassThrough();
@@ -54,19 +55,29 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               titleStr = `${props.title} - ${titleStr}`;
             }
 
-            const htmlTagsStr =
-              initialViewCtx?.html == null
-                ? ""
-                : ` ${getHtmlTagsStr(initialViewCtx.html)}`;
-            const headTagsStr =
-              initialViewCtx?.head == null
-                ? ""
-                : getHeadTagsStr(initialViewCtx.head);
+            const htmlTags = {
+              ...(options?.viewContext?.html || {}),
+              ...(viewCtx?.html || {}),
+            };
+
+            const headTags = [
+              ...(options?.viewContext?.head || []),
+              ...(viewCtx?.head || []),
+            ];
+
+            const htmlTagsStr = ` ${getHtmlTagsStr(htmlTags)}`;
+            const headTagsStr = getHeadTagsStr(headTags);
 
             // Write html/head tags
             endpointStream.write(
               `<html${htmlTagsStr}><head><title>${titleStr}</title>${headTagsStr}</head><body>`,
             );
+
+            const {
+              head: _,
+              html: __,
+              ...baseViewCtx
+            } = (options?.viewContext || {}) as ViewContext;
 
             const viewProps = {
               ...options?.commonProps,
@@ -74,7 +85,8 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               // \/ ensure last so its not overridden by props/commonProps
               viewCtx: <ViewContextBase>{
                 headers: this.request.headers,
-                ...initialViewCtx,
+                ...(baseViewCtx || {}),
+                ...(viewCtx || {}),
               },
             };
 

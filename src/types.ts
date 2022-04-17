@@ -2,6 +2,15 @@ import { FastifyReply } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
 import { VFC } from "react";
 
+export type ViewContext = {
+  [x: string]: unknown;
+  head?: HeadTag[];
+  html?: {
+    lang?: string;
+    dir?: string;
+  };
+};
+
 export interface CommonPropsBase {
   [x: string]:
     | string
@@ -13,7 +22,8 @@ export interface CommonPropsBase {
 }
 
 export interface StreamReactViewPluginOptions<
-  C extends CommonPropsBase = CommonPropsBase,
+  CP extends CommonPropsBase = CommonPropsBase,
+  VC extends ViewContext = ViewContext,
 > {
   /**
    * Defaut tab page title
@@ -41,7 +51,11 @@ export interface StreamReactViewPluginOptions<
    * @note Props set directly in the reply.streamReactView() call will override
    * common props if both happens to specify the same key.
    */
-  commonProps?: C;
+  commonProps?: CP;
+  /**
+   * An object to be merged later with view context.
+   */
+  viewContext?: VC;
   /**
    * Enable/Disable supports for styled-components ssr
    */
@@ -81,14 +95,7 @@ export type StreamReactViewFunction = (
   this: FastifyReply,
   view: string,
   props?: Record<string, unknown>,
-  initialViewCtx?: {
-    [x: string]: unknown;
-    head?: HeadTag[];
-    html?: {
-      lang?: string;
-      dir?: string;
-    };
-  },
+  initialViewCtx?: ViewContext,
 ) => Promise<FastifyReply>;
 
 export type ReactView<P> = VFC<
