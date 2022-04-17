@@ -30,6 +30,11 @@ export interface StreamReactViewPluginOptions<
    */
   appName?: string;
   /**
+   * Title bar separator character (`${pageTitle} ${titleSeparatorChar} ${appName}`)
+   * defaults to: `-`, other cool values includes: `∙`
+   **/
+  titleSeparatorChar?: string;
+  /**
    * An hashmap of routes, this is the preferred way to use this module main because
    * the `viewsFolder` option relies on import/require wizardry.
    */

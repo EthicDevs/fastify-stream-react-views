@@ -52,7 +52,9 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
 
             let titleStr = options?.appName || "Fastify + React = ❤️";
             if (props != null && "title" in props && props.title != null) {
-              titleStr = `${props.title} - ${titleStr}`;
+              titleStr = `${props.title} ${
+                options?.titleSeparatorChar || "-"
+              } ${titleStr}`;
             }
 
             const htmlTags = {
@@ -65,12 +67,12 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               ...(viewCtx?.head || []),
             ];
 
-            const htmlTagsStr = ` ${getHtmlTagsStr(htmlTags)}`;
+            const htmlTagsStr = getHtmlTagsStr(htmlTags);
             const headTagsStr = getHeadTagsStr(headTags);
 
             // Write html/head tags
             endpointStream.write(
-              `<html${htmlTagsStr}><head><title>${titleStr}</title>${headTagsStr}</head><body>`,
+              `<html ${htmlTagsStr}><head><title>${titleStr}</title>${headTagsStr}</head><body>`,
             );
 
             const {
