@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import { ReactIsland } from "../types";
+import { IslandsWrapper } from "../components/IslandsWrapper";
+export { IslandsWrapper }; // re-export so its in the runtime bundle
 
 /**
  * A function that given an HashMap of Islands, and an HashMap of Islands Props,
@@ -18,15 +20,20 @@ export async function reviveIslands(
 ): Promise<string[]> {
   let revivedIslands: string[] = [];
   Object.entries(islands).forEach(([islandId, Island]) => {
-    const props =
-      islandId in islandsProps && islandsProps[islandId] != null
-        ? islandsProps[islandId]
-        : {};
-    ReactDOM.render(
-      <Island {...props} _csr={true} />,
-      document.getElementById(islandId),
-    );
-    revivedIslands.push(islandId);
+    try {
+      const props =
+        islandId in islandsProps && islandsProps[islandId] != null
+          ? islandsProps[islandId]
+          : {};
+      ReactDOM.render(
+        <Island {...props} _csr={true} />,
+        document.getElementById(islandId),
+        () => revivedIslands.push(islandId),
+      );
+    } catch (err) {
+      const errMsg = (err as Error).message;
+      console.log(`Could not revive Island "${islandId}". Error: ${errMsg}`);
+    }
   });
   return revivedIslands;
 }

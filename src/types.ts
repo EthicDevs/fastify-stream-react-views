@@ -128,6 +128,7 @@ export type StreamReactViewFunction = (
   initialViewCtx?: ViewContext,
 ) => Promise<FastifyReply>;
 
+// Always rendered on the server.
 export type ReactView<P = {}> = VFC<P & { _ssr: true }>;
-
-export type ReactIsland<P = {}> = VFC<P & { _csr: true }>;
+// Isomorphic, first-render happens on the server, then client revives it.
+export type ReactIsland<P = {}> = VFC<P & { _csr?: boolean }>;

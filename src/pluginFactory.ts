@@ -4,6 +4,7 @@ import stream from "stream";
 // 3rd party - fastify std
 import type { FastifyPluginAsync } from "fastify";
 import makeFastifyPlugin from "fastify-plugin";
+import ssrPrepass from "react-ssr-prepass";
 
 // lib
 import type {
@@ -20,6 +21,7 @@ import {
   HTML_MIME_TYPE,
 } from "./constants";
 import { DefaultAppComponent } from "./components/DefaultAppComponent";
+import { IslandsWrapper } from "./components/IslandsWrapper";
 import {
   buildViewWithProps,
   getHeadTagsStr,
@@ -28,8 +30,10 @@ import {
   renderViewToStaticStream,
   renderViewToStream,
   walkFolderForFiles,
+  wrapIslandsWithComponent,
   wrapViewsWithApp,
 } from "./helpers";
+import { ComponentType } from "react";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -38,14 +42,15 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
     }
 
-    let viewsByName: Record<string, ReactView> = {};
-    let islandsByName: Record<string, ReactIsland> = {};
+    let viewsById: { [viewId: string]: ReactView } = {};
+    let islandsById: { [islandId: string]: ReactIsland } = {};
+    let islandsPropsById: { [islandId: string]: Record<string, unknown> } = {};
 
     if (options != null && options.viewsFolder != null) {
       const result = await walkFolderForFiles<ReactView>(options.viewsFolder);
       if (result != null) {
-        viewsByName = result;
-        console.log("Found views:", viewsByName);
+        viewsById = result;
+        console.log("Found views:", viewsById);
       }
     }
 
@@ -54,28 +59,30 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
         options.islandsFolder,
       );
       if (result != null) {
-        islandsByName = result;
-        console.log("Found islands:", islandsByName);
+        islandsById = result;
+        console.log("Found islands:", islandsById);
       }
     }
 
     if (options != null && options.views != null) {
-      viewsByName = { ...viewsByName, ...options.views };
+      viewsById = { ...viewsById, ...options.views };
     }
 
-    viewsByName = wrapViewsWithApp(
-      viewsByName,
+    viewsById = wrapViewsWithApp(
+      viewsById,
       options != null && options.appComponent != null
         ? options.appComponent
         : DefaultAppComponent,
     );
 
+    islandsById = wrapIslandsWithComponent(islandsById, IslandsWrapper);
+
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
       function streamReactView(view, props, viewCtx) {
-        if (view in viewsByName === false || viewsByName[view] == null) {
+        if (view in viewsById === false || viewsById[view] == null) {
           console.error(
             `Cannot find the requested view ${view} in views:`,
-            viewsByName,
+            viewsById,
           );
           throw new Error(`Cannot find the requested view "${view}".
         Please verify your "viewsFolder" configured folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
@@ -137,8 +144,33 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               },
             };
 
-            const reactView = viewsByName[view];
+            const reactView = viewsById[view];
             const viewEl = buildViewWithProps(reactView, viewProps);
+            await ssrPrepass(viewEl, (element) => {
+              const el = element as unknown as ComponentType & {
+                type: string;
+                key: string;
+                props: {};
+              };
+              const island = Object.entries(islandsById).find(
+                ([islandId]) =>
+                  el.type != null &&
+                  typeof el.type === "function" &&
+                  islandId === (el.type as Function).name,
+              );
+
+              if (island) {
+                const [islandId] = island;
+                islandsPropsById = {
+                  ...islandsPropsById,
+                  [islandId]: {
+                    ...((element as any).props || {}),
+                  },
+                };
+              }
+
+              return undefined;
+            });
 
             const onEndCallback = (err?: unknown) => {
               if (err != null) {
@@ -172,72 +204,57 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
 
               if (endpointStream.readableEnded === false) {
                 // Inject Interactive components and their props.
+                const islandsEntries = Object.entries(islandsById);
+                const islandsPropsEntries = Object.entries(islandsPropsById);
+                const reactEnv =
+                  process.env.NODE_ENV === "production"
+                    ? "production"
+                    : "development";
                 const script: string = `
-<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"></script>
+<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.${reactEnv}.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.${reactEnv}.js"></script>
+<script src="/public/islands-runtime.js"></script>
 <script type="text/javascript">
-"use strict";
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-function reviveInteractiveComponents(components) {
-  var entries = Object.entries(components);
-  var revivedElements = [];
-  entries.forEach(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2);
-
-    var componentId = _ref2[0];
-    var getComponent = _ref2[1];
-
-    revivedElements.push(ReactDOM.render(getComponent(), document.getElementById(componentId)));
-  });
-}
-
-function AppFooter() {
-  var _React$useState = React.useState(0);
-
-  var _React$useState2 = _slicedToArray(_React$useState, 2);
-
-  var counter = _React$useState2[0];
-  var setCounter = _React$useState2[1];
-
-  var incrementCounter = function incrementCounter() {
-    return setCounter(function (prev) {
-      return prev + 1;
-    });
+  const start = new Date().getTime();
+  console.log('Reviving Islands for view "${view}"...');
+  ${islandsEntries
+    // we can safely do (v as any).island to get the island back because its been
+    // wrapper with IslandWrapper which sets this property on the component.
+    // TODO(type-safety): add a type-guard to ensure only objects with this field
+    // are used in this branch.
+    .map(([_, v], islandIdx) => `var $$${islandIdx} = ${(v as any).island}`)
+    .join(";\n")
+    .replace(/react_[0-9]\.default/gi, "React")
+    .replace(/react_[0-9]/gi, "React")}
+  ;var islands = {
+    ${islandsEntries
+      .map(([k], islandIdx) => `"${k}": $$${islandIdx}`)
+      .join(",\n")
+      .replace(/react_[0-9]\.default/gi, "React")
+      .replace(/react_[0-9]/gi, "React")}
   };
-  var decrementCounter = function decrementCounter() {
-    return setCounter(function (prev) {
-      return prev - 1;
-    });
+  var islandsProps = {
+    ${islandsPropsEntries
+      .map(([k, v]) => `"${k}": ${JSON.stringify(v)}`)
+      .join(",\n")
+      .replace(/react_[0-9]\.default/gi, "React")
+      .replace(/react_[0-9]/gi, "React")}
   };
-  return React.createElement(
-    "div",
-    null,
-    React.createElement(
-      "strong",
-      null,
-      "Footer counter: " + counter
-    ),
-    React.createElement(
-      "button",
-      { onClick: incrementCounter },
-      "INCREMENT"
-    ),
-    React.createElement(
-      "button",
-      { onClick: decrementCounter },
-      "DECREMENT"
-    )
-  );
-}
 
-var components = {
-  "app--footer": function appFooter() {
-    return React.createElement(AppFooter, null);
+  function printDuration() {
+    const end = new Date().getTime();
+    console.log(\`Done in \${end - start}ms\`);
   }
-};
-reviveInteractiveComponents(components);
+
+  reviveIslands(islands, islandsProps)
+    .then((revivedIslands) => {
+      console.log("Revived Islands:", revivedIslands);
+      printDuration();
+    })
+    .catch((err) => {
+      console.error("Could not revive Islands. Error:", err);
+      printDuration();
+    });
 </script>
 `;
                 // Important, close the body & html tags.

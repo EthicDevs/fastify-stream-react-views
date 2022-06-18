@@ -1,0 +1,4 @@
+{
+  "taskfinder.package-manager" : "yarn",
+  "taskfinder.yarn.path" : "\/Users\/admin\/.yvm\/shim\/yarn"
+}
