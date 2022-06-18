@@ -37,6 +37,29 @@ export interface StreamReactViewPluginOptions<
    */
   appName?: string;
   /**
+   * An object of common props passed to every View when rendered,
+   * the properties does not needs to be serialisable, and thus functions can be
+   * easily passed down the tree ;)
+   * @note Props set directly in the reply.streamReactView() call will override
+   * common props if both happens to specify the same key.
+   */
+  commonProps?: CP;
+  /**
+   * Path to React components to render as islands (w/ ext. jsx or tsx).
+   *
+   * Islands are regular components that get "revived" on the client once SSR
+   * has been received by the client. It allows for self-contained area of
+   * interactivity within a server-side rendered view, on the client side.
+   *
+   * @example
+   * {
+   *   // ... skip ...
+   *   // assuming file at ./src/server.ext, islands at ./src/islands/*.ext
+   *   islandsFolder: path.resolve(path.join(__dirname, './islands'));
+   * }
+   */
+  islandsFolder?: string;
+  /**
    * Title bar separator character (`${pageTitle} ${titleSeparatorChar} ${appName}`)
    * defaults to: `-`, other cool values includes: `∙`
    **/
@@ -47,7 +70,10 @@ export interface StreamReactViewPluginOptions<
    */
   views?: Record<string, React.VFC>;
   /**
-   * Path to React components to render as views (w/ ext. in /.j|tsx?/i)
+   * Path to React components to render as views (w/ ext. jsx or tsx).
+   *
+   * View are regular HTML pages made-up of server-side rendered React components.
+   *
    * @example
    * {
    *   // ... skip ...
@@ -56,14 +82,6 @@ export interface StreamReactViewPluginOptions<
    * }
    */
   viewsFolder?: string;
-  /**
-   * An object of common props passed to every View when rendered,
-   * the properties does not needs to be serialisable, and thus functions can be
-   * easily passed down the tree ;)
-   * @note Props set directly in the reply.streamReactView() call will override
-   * common props if both happens to specify the same key.
-   */
-  commonProps?: CP;
   /**
    * An object to be merged later with view context.
    */
@@ -112,4 +130,4 @@ export type StreamReactViewFunction = (
 
 export type ReactView<P = {}> = VFC<P & { _ssr: true }>;
 
-export type ClientSideComponent<P = {}> = VFC<P & { _csr: true }>;
+export type ReactIsland<P = {}> = VFC<P & { _csr: true }>;

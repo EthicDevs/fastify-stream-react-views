@@ -4,7 +4,7 @@
     "target": "es2018",
     "module": "commonjs",
     "jsx": "react",
-    "lib": [],
+    "lib": ["dom"],
     "declaration": true,
     "outDir": "./dist",
     "rootDir": "./src",

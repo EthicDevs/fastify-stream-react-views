@@ -4,10 +4,10 @@ import stream from "stream";
 // 3rd party - fastify std
 import type { FastifyPluginAsync } from "fastify";
 import makeFastifyPlugin from "fastify-plugin";
-import { scanAsync as walkFolder } from "dree";
 
 // lib
 import type {
+  ReactIsland,
   ReactView,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
@@ -22,11 +22,14 @@ import {
 import { DefaultAppComponent } from "./components/DefaultAppComponent";
 import {
   buildViewWithProps,
+  getHeadTagsStr,
+  getHtmlTagsStr,
+  isStyledComponentsAvailable,
   renderViewToStaticStream,
   renderViewToStream,
-} from "./renderViewToStream";
-import { getHeadTagsStr, getHtmlTagsStr, wrapViewsWithApp } from "./helpers";
-import { isStyledComponentsAvailable } from "./styledComponentsTest";
+  walkFolderForFiles,
+  wrapViewsWithApp,
+} from "./helpers";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -36,32 +39,23 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
     }
 
     let viewsByName: Record<string, ReactView> = {};
+    let islandsByName: Record<string, ReactIsland> = {};
 
     if (options != null && options.viewsFolder != null) {
-      const tree = await walkFolder(options.viewsFolder, {
-        depth: 5,
-        extensions: ["jsx", "tsx"],
-        normalize: true,
-        followLinks: true,
-        size: true,
-        hash: true,
-      });
+      const result = await walkFolderForFiles<ReactView>(options.viewsFolder);
+      if (result != null) {
+        viewsByName = result;
+        console.log("Found views:", viewsByName);
+      }
+    }
 
-      if (tree != null && tree.type === "directory" && tree.children != null) {
-        viewsByName = await tree.children.reduce(async (accP, node) => {
-          let acc = await accP;
-          const nodeFile = await import(node.path);
-          const nodeKey =
-            node.extension == null
-              ? node.relativePath
-              : node.relativePath.substring(
-                  0,
-                  // Strip extension length, +1 for dot
-                  node.relativePath.length - (node.extension.length + 1),
-                );
-          acc = { ...acc, [nodeKey]: nodeFile.default as ReactView };
-          return acc;
-        }, Promise.resolve({} as typeof viewsByName));
+    if (options != null && options.islandsFolder != null) {
+      const result = await walkFolderForFiles<ReactIsland>(
+        options.islandsFolder,
+      );
+      if (result != null) {
+        islandsByName = result;
+        console.log("Found islands:", islandsByName);
       }
     }
 
@@ -177,8 +171,77 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               }
 
               if (endpointStream.readableEnded === false) {
+                // Inject Interactive components and their props.
+                const script: string = `
+<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"></script>
+<script type="text/javascript">
+"use strict";
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+function reviveInteractiveComponents(components) {
+  var entries = Object.entries(components);
+  var revivedElements = [];
+  entries.forEach(function (_ref) {
+    var _ref2 = _slicedToArray(_ref, 2);
+
+    var componentId = _ref2[0];
+    var getComponent = _ref2[1];
+
+    revivedElements.push(ReactDOM.render(getComponent(), document.getElementById(componentId)));
+  });
+}
+
+function AppFooter() {
+  var _React$useState = React.useState(0);
+
+  var _React$useState2 = _slicedToArray(_React$useState, 2);
+
+  var counter = _React$useState2[0];
+  var setCounter = _React$useState2[1];
+
+  var incrementCounter = function incrementCounter() {
+    return setCounter(function (prev) {
+      return prev + 1;
+    });
+  };
+  var decrementCounter = function decrementCounter() {
+    return setCounter(function (prev) {
+      return prev - 1;
+    });
+  };
+  return React.createElement(
+    "div",
+    null,
+    React.createElement(
+      "strong",
+      null,
+      "Footer counter: " + counter
+    ),
+    React.createElement(
+      "button",
+      { onClick: incrementCounter },
+      "INCREMENT"
+    ),
+    React.createElement(
+      "button",
+      { onClick: decrementCounter },
+      "DECREMENT"
+    )
+  );
+}
+
+var components = {
+  "app--footer": function appFooter() {
+    return React.createElement(AppFooter, null);
+  }
+};
+reviveInteractiveComponents(components);
+</script>
+`;
                 // Important, close the body & html tags.
-                endpointStream.end(`</body></html>`);
+                endpointStream.end(`${script}</body></html>`);
               }
 
               return resolve(this.send(endpointStream));

@@ -7,7 +7,19 @@ declare module "fastify" {
   }
 }
 
-export { StreamReactViewPluginOptions, ViewContextBase } from "./types";
+export {
+  CommonPropsBase,
+  HeadTag,
+  HeadTagLink,
+  HeadTagMeta,
+  HeadTagMetaCharset,
+  ReactView,
+  ReactIsland,
+  StreamReactViewFunction,
+  StreamReactViewPluginOptions,
+  ViewContext,
+  ViewContextBase,
+} from "./types";
 
 /* Register Function */
 import { makePlugin } from "./pluginFactory";
