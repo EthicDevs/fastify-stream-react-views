@@ -22,14 +22,15 @@
     "alwaysStrict": true,
 
     // Additional Checks
+    "allowSyntheticDefaultImports": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-
-    "esModuleInterop": true,
+    "skipLibCheck": true,
 
     // Experimental Options
+    "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },

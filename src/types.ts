@@ -26,6 +26,13 @@ export interface StreamReactViewPluginOptions<
   VC extends ViewContext = ViewContext,
 > {
   /**
+   * App component, wraps every view. Useful for things that are shared around
+   * views, for setting context providers up, or to catch errors (w/ errors boundary).
+   * Defaults to using the `DefaultAppComponent` (an empty fragment wrapping its
+   * children) when it is not provided.
+   */
+  appComponent?: React.FC;
+  /**
    * Defaut tab page title
    */
   appName?: string;
@@ -103,8 +110,6 @@ export type StreamReactViewFunction = (
   initialViewCtx?: ViewContext,
 ) => Promise<FastifyReply>;
 
-export type ReactView<P> = VFC<
-  P & {
-    ssr: boolean;
-  }
->;
+export type ReactView<P = {}> = VFC<P & { _ssr: true }>;
+
+export type ClientSideComponent<P = {}> = VFC<P & { _csr: true }>;

@@ -8,7 +8,7 @@ export function buildViewWithProps<P>(
   View: ReactView<P>,
   props: P,
 ): JSX.Element {
-  return <View {...props} ssr />;
+  return <View {...props} _ssr />;
 }
 
 export function renderViewToStaticStream(

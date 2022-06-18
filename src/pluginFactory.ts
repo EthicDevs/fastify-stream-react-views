@@ -1,10 +1,10 @@
 // std
-import path from "path";
 import stream from "stream";
 
 // 3rd party - fastify std
 import type { FastifyPluginAsync } from "fastify";
-import fp from "fastify-plugin";
+import makeFastifyPlugin from "fastify-plugin";
+import { scanAsync as walkFolder } from "dree";
 
 // lib
 import type {
@@ -19,14 +19,14 @@ import {
   HTML_DOCTYPE,
   HTML_MIME_TYPE,
 } from "./constants";
-import { requireView } from "./requireView";
+import { DefaultAppComponent } from "./components/DefaultAppComponent";
 import {
   buildViewWithProps,
   renderViewToStaticStream,
   renderViewToStream,
 } from "./renderViewToStream";
+import { getHeadTagsStr, getHtmlTagsStr, wrapViewsWithApp } from "./helpers";
 import { isStyledComponentsAvailable } from "./styledComponentsTest";
-import { getHeadTagsStr, getHtmlTagsStr } from "./helpers";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -35,8 +35,58 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
     }
 
+    let viewsByName: Record<string, ReactView> = {};
+
+    if (options != null && options.viewsFolder != null) {
+      const tree = await walkFolder(options.viewsFolder, {
+        depth: 5,
+        extensions: ["jsx", "tsx"],
+        normalize: true,
+        followLinks: true,
+        size: true,
+        hash: true,
+      });
+
+      if (tree != null && tree.type === "directory" && tree.children != null) {
+        viewsByName = await tree.children.reduce(async (accP, node) => {
+          let acc = await accP;
+          const nodeFile = await import(node.path);
+          const nodeKey =
+            node.extension == null
+              ? node.relativePath
+              : node.relativePath.substring(
+                  0,
+                  // Strip extension length, +1 for dot
+                  node.relativePath.length - (node.extension.length + 1),
+                );
+          acc = { ...acc, [nodeKey]: nodeFile.default as ReactView };
+          return acc;
+        }, Promise.resolve({} as typeof viewsByName));
+      }
+    }
+
+    if (options != null && options.views != null) {
+      viewsByName = { ...viewsByName, ...options.views };
+    }
+
+    viewsByName = wrapViewsWithApp(
+      viewsByName,
+      options != null && options.appComponent != null
+        ? options.appComponent
+        : DefaultAppComponent,
+    );
+
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
       function streamReactView(view, props, viewCtx) {
+        if (view in viewsByName === false || viewsByName[view] == null) {
+          console.error(
+            `Cannot find the requested view ${view} in views:`,
+            viewsByName,
+          );
+          throw new Error(`Cannot find the requested view "${view}".
+        Please verify your "viewsFolder" configured folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
+        }
+
         return new Promise(async (resolve, reject) => {
           try {
             const endpointStream = new stream.PassThrough();
@@ -85,6 +135,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               ...options?.commonProps,
               ...props,
               // \/ ensure last so its not overridden by props/commonProps
+              _ssr: true,
               viewCtx: <ViewContextBase>{
                 headers: this.request.headers,
                 ...(baseViewCtx || {}),
@@ -92,56 +143,50 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               },
             };
 
-            let possibleReactViews: ReactView<unknown>[] = [];
+            const reactView = viewsByName[view];
+            const viewEl = buildViewWithProps(reactView, viewProps);
 
-            if (
-              options?.views != null &&
-              view in options.views === true &&
-              options.views?.[view] != null
-            ) {
-              possibleReactViews.push(options.views[view]);
-            }
-
-            if (
-              options?.viewsFolder != null &&
-              options.viewsFolder.trim() !== ""
-            ) {
-              const reactView = await requireView(
-                path.resolve(path.join(options.viewsFolder, view)),
-              );
-              possibleReactViews.push(reactView);
-            }
-
-            const reactView = possibleReactViews[0];
-            if (reactView == null) {
-              throw new Error(`Cannot find the requested view "${view}".
-Please verify your "viewsFolder" configured folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
-            }
-
-            const viewEl = buildViewWithProps(reactView, props);
-
-            const onEndCallback = () => {
-              const { viewCtx } = viewProps;
-
-              if (viewCtx?.redirectUrl != null) {
-                if (endpointStream.readableEnded === false) {
-                  endpointStream.end();
-                }
-                return resolve(this.redirect(301, viewCtx.redirectUrl));
+            const onEndCallback = (err?: unknown) => {
+              if (err != null) {
+                const error = err as Error;
+                console.error(`Cannot render view: "${view}". Error:\n`, error);
+                endpointStream.end(
+                  `<h1>${error.name}</h1><p>${error.message.replace(
+                    "\n",
+                    "<br />",
+                  )}</p><pre style="max-width:100%;white-space:pre-wrap;"><code>${
+                    error.stack
+                  }</code></pre></body></html>`,
+                );
+                return resolve(this.send(endpointStream));
               }
 
-              this.status(viewCtx?.status || 200);
+              const { viewCtx } = viewProps;
+
+              if (viewCtx != null) {
+                if (viewCtx.redirectUrl != null) {
+                  if (endpointStream.readableEnded === false) {
+                    endpointStream.end();
+                  }
+                  return resolve(this.redirect(301, viewCtx.redirectUrl));
+                }
+
+                if (viewCtx.status != null) {
+                  this.status(viewCtx.status);
+                }
+              }
 
               if (endpointStream.readableEnded === false) {
                 // Important, close the body & html tags.
-                endpointStream.end("</body></html>");
+                endpointStream.end(`</body></html>`);
               }
 
               return resolve(this.send(endpointStream));
             };
 
             if (
-              options?.withStyledSSR === true &&
+              options != null &&
+              options.withStyledSSR === true &&
               isStyledComponentsAvailable()
             ) {
               const { ServerStyleSheet } = require("styled-components");
@@ -172,5 +217,5 @@ Please verify your "viewsFolder" configured folder aswell as the "views" config 
   };
 
 export function makePlugin() {
-  return fp(streamReactViewsPluginAsync, FASTIFY_VERSION_TARGET);
+  return makeFastifyPlugin(streamReactViewsPluginAsync, FASTIFY_VERSION_TARGET);
 }
