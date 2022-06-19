@@ -1,14 +1,13 @@
 // std
 import { join, resolve } from "path";
-// import { writeFile } from "fs/promises";
 import stream from "stream";
 
 // 3rd party - fastify std
 import type { ComponentType } from "react";
 import type { FastifyPluginAsync } from "fastify";
-import { build as buildCode } from "esbuild";
-import { nodeExternalsPlugin } from "esbuild-node-externals";
+import { analyzeMetafile, build as buildCode } from "esbuild";
 import makeFastifyPlugin from "fastify-plugin";
+import { nodeExternalsPlugin } from "esbuild-node-externals";
 import ssrPrepass from "react-ssr-prepass";
 
 // lib
@@ -76,89 +75,77 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
           { minify: true, target: "es5" },
         ).code;*/
 
-        // Not working bundle function (see => https://github.com/swc-project/swc/issues/2574)
         await Promise.all(
           Object.entries(islandsById).map(async ([islandId]) => {
-            console.log(`Bundling Island "${islandId}" ...`);
+            console.log(`Bundling Island "${islandId}" for browser (esm) ...`);
             const buildResults = await buildCode({
-              entryPoints: [
-                resolve(join(options.islandsFolder!, `${islandId}.tsx`)),
-              ],
+              entryPoints: {
+                [`${islandId}.bundle`]: resolve(
+                  join(options.islandsFolder!, `${islandId}.tsx`),
+                ),
+              },
               outdir: resolve(join(options.rootFolder!, "public", ".islands")),
               bundle: true,
               loader: { ".js": "jsx" },
               minify: true,
+              minifyIdentifiers: false,
+              metafile: true,
               target: "es6",
               absWorkingDir: options.rootFolder,
               charset: "utf8",
-              external: ["React", "ReactDOM", "styled"],
+              globalName: islandId,
+              external: ["react", "react-dom", "styled-components"],
               jsx: "transform",
               keepNames: true,
               write: true,
               sourcemap: true,
+              format: "esm",
               plugins: [nodeExternalsPlugin()],
-            });
-            console.log(
-              `Bundled Island "${islandId}" ! Results:`,
-              buildResults,
-            );
-
-            /* const bundleResults = await bundleCode([
-              {
-                module: {},
-                externalModules: ["React", "ReactDOM"],
-                workingDir: options.rootFolder,
-                mode:
-                  NODE_ENV_STRICT === "production"
-                    ? "production"
-                    : ("debug" as any), // does the error comes from typing or docs?
-                target: "browser",
-                entry: {
-                  web: resolve(join(options.islandsFolder!, `${islandId}.tsx`)),
-                },
-                output: {
-                  path: resolve(join(options.distFolder!, ".islands")),
-                  name: `${islandId}.js`,
-                },
-                options: {
-                  filename: `${islandId}.tsx`,
-                  configFile: true,
-                  sourceMaps: true,
-                  isModule: true,
-                  outputPath: resolve(join(options.distFolder, ".islands")),
-                  minify: true,
-                  sourceFileName: `${islandId}.tsx`,
-                },
+              banner: {
+                js: `var modules = {};`,
               },
-            ]); */
+              footer: {
+                js: `(function (root, factory) {
+                  if (typeof define === 'function' && define.amd) {
+                    define(factory);
+                  } else if (typeof module === 'object' && module.exports) {
+                    module.exports = factory();
+                  } else {
+                    root.${islandId} = factory();
+                  }
+                }(typeof self !== 'undefined' ? self : this, () => ${islandId}));`,
+              },
+            });
 
-            /*await Promise.all(
-              Object.entries(buildResults).map(async (islandBundle) => {
-                const [name, bundle] = islandBundle;
-                console.log("bundleName:", name, islandId);
-                const { code, map } = bundle;
-                await writeFile(
-                  resolve(
-                    join(options.distFolder, ".islands", `${islandId}.js`),
-                  ),
-                  code,
-                  { encoding: "utf-8" },
-                );
-                if (map) {
+            /*const outputsEntries = Object.entries(buildResults.outputFiles!);
+            await Promise.all(
+              outputsEntries.map(async ([outputPath, output]) => {
+                const umdResult = transformCode(output.text, {
+                  plugins: ["@babel/transform-modules-umd"],
+                });
+                if (umdResult != null) {
+                  console.log("outputPath:", outputPath);
+                  console.log("outputCode:", umdResult.code?.substring(0, 256));
                   await writeFile(
-                    resolve(
-                      join(
-                        options.distFolder,
-                        ".islands",
-                        `${islandId}.map.js`,
-                      ),
-                    ),
-                    map,
+                    outputPath,
+                    umdResult.code != null ? umdResult.code : "",
                     { encoding: "utf-8" },
                   );
                 }
               }),
-            ); */
+            );*/
+
+            let bundleAnalysisText = await analyzeMetafile(
+              buildResults.metafile,
+              {
+                verbose: true,
+              },
+            );
+
+            console.log(
+              `Bundled Island "${islandId}" for browser (esm) ! Results:`,
+              bundleAnalysisText, // buildResults.outputFiles,
+            );
           }),
         );
       }
@@ -187,6 +174,8 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
           throw new Error(`Cannot find the requested view "${view}".
         Please verify your "viewsFolder" configured folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
         }
+
+        let encounteredIslandsById: { [islandId: string]: ReactIsland } = {};
 
         return new Promise(async (resolve, reject) => {
           try {
@@ -271,6 +260,11 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                       ? islandTypesCounters[islandId] + 1
                       : 0,
                 };
+                let [_, IslandC] = island;
+                encounteredIslandsById = {
+                  ...encounteredIslandsById,
+                  [islandId]: IslandC,
+                };
                 islandsPropsById = {
                   ...islandsPropsById,
                   [`${islandId}$$${islandTypesCounters[islandId]}`]: {
@@ -314,43 +308,58 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
 
               if (endpointStream.readableEnded === false) {
                 // Inject Interactive components and their props.
-                const islandsEntries = Object.entries(islandsById);
+                const encounteredIslandsEntries = Object.entries(
+                  encounteredIslandsById,
+                );
+                // const islandsEntries = Object.entries(islandsById);
                 const islandsPropsEntries = Object.entries(islandsPropsById);
+                const fileForEnv =
+                  NODE_ENV_STRICT === "production"
+                    ? `production.min`
+                    : `development`;
                 const script: string = `
-<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.${NODE_ENV_STRICT}.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.${NODE_ENV_STRICT}.js"></script>
-<script crossorigin src="https://unpkg.com/styled-components@5.3.5/dist/styled-components.min.js"></script>
-<script src="/public/islands-runtime.js"></script>
-<script type="text/javascript">
+<script type="module" src="/public/.cdn/react.${fileForEnv}.js"></script>
+<script type="module" src="/public/.cdn/react-is.${fileForEnv}.js"></script>
+<script type="module" src="/public/.cdn/react-dom.${fileForEnv}.js"></script>
+<script type="module" src="/public/.cdn/styled-components.production.min.js"></script>
+<script type="module" src="/public/islands-runtime.js"></script>
+${encounteredIslandsEntries
+  .map(
+    ([islandId]) =>
+      `<script type="module" src="/public/.islands/${islandId}.bundle.js"></script>`,
+  )
+  .join("\n")}
+<script type="module">
+import {reviveIslands} from "/public/islands-runtime.js";
+
+${encounteredIslandsEntries
+  .map(
+    ([islandId]) =>
+      `  import ${islandId} from "/public/.islands/${islandId}.bundle.js"`,
+  )
+  .join(";\n")};
+
   const start = new Date().getTime();
-  console.log('Reviving Islands for view "${view}"...');
-  ${islandsEntries
-    // we can safely do (v as any).island to get the island back because its been
-    // wrapper with IslandWrapper which sets this property on the component.
-    // TODO(type-safety): add a type-guard to ensure only objects with this field
-    // are used in this branch.
-    .map(([_, v], islandIdx) => `var $$${islandIdx} = ${(v as any).island}`)
-    .join(";\n")
-    .replace(/react_[0-9]\.default/gi, "React")
-    .replace(/react_[0-9]/gi, "React")}
-  ;var islands = {
-    ${islandsEntries
-      .map(([k], islandIdx) => `    "${k}": $$${islandIdx}`)
-      .join(",\n")
-      .replace(/react_[0-9]\.default/gi, "React")
-      .replace(/react_[0-9]/gi, "React")}
+  console.log(\`[\${start}] Reviving Islands for view "${view}"...\`);
+
+  var islands = {
+${encounteredIslandsEntries
+  // .map(([k], islandIdx) => `    "${k}": $$${islandIdx}`)
+  .map(([islandId]) => `    "${islandId}": ${islandId}`)
+  .join(",\n")
+  .replace(/react_[0-9]\.default/gi, "React")
+  .replace(/react_[0-9]/gi, "React")}
   };
+
   var islandsProps = {
-    ${islandsPropsEntries
-      .map(([k, v]) => `    "${k}": ${JSON.stringify(v)}`)
-      .join(",\n")
-      .replace(/react_[0-9]\.default/gi, "React")
-      .replace(/react_[0-9]/gi, "React")}
+${islandsPropsEntries
+  .map(([k, v]) => `    "${k}": ${JSON.stringify(v)}`)
+  .join(",\n")},
   };
 
   function printDuration() {
     const end = new Date().getTime();
-    console.log(\`Done in \${end - start}ms\`);
+    console.log(\`[\${end}] Done in \${end - start}ms\`);
   }
 
   var islandsEls = document.querySelectorAll('[data-islandid]');
