@@ -1,12 +1,13 @@
 // std
-// import { join, resolve } from "path";
+import { join, resolve } from "path";
 // import { writeFile } from "fs/promises";
 import stream from "stream";
 
 // 3rd party - fastify std
 import type { ComponentType } from "react";
 import type { FastifyPluginAsync } from "fastify";
-// import { bundle as bundleCode } from "@swc/core";
+import { build as buildCode } from "esbuild";
+import { nodeExternalsPlugin } from "esbuild-node-externals";
 import makeFastifyPlugin from "fastify-plugin";
 import ssrPrepass from "react-ssr-prepass";
 
@@ -67,10 +68,42 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
       if (result != null) {
         islandsById = result;
         console.log("Found islands:", islandsById);
+
+        /*const regeneratorRuntime = transformSync(
+          readFileSync(
+            "node_modules/regenerator-runtime/runtime.js",
+          ).toString(),
+          { minify: true, target: "es5" },
+        ).code;*/
+
         // Not working bundle function (see => https://github.com/swc-project/swc/issues/2574)
-        /*await Promise.all(
+        await Promise.all(
           Object.entries(islandsById).map(async ([islandId]) => {
-            const bundleResults = await bundleCode([
+            console.log(`Bundling Island "${islandId}" ...`);
+            const buildResults = await buildCode({
+              entryPoints: [
+                resolve(join(options.islandsFolder!, `${islandId}.tsx`)),
+              ],
+              outdir: resolve(join(options.rootFolder!, "public", ".islands")),
+              bundle: true,
+              loader: { ".js": "jsx" },
+              minify: true,
+              target: "es6",
+              absWorkingDir: options.rootFolder,
+              charset: "utf8",
+              external: ["React", "ReactDOM", "styled"],
+              jsx: "transform",
+              keepNames: true,
+              write: true,
+              sourcemap: true,
+              plugins: [nodeExternalsPlugin()],
+            });
+            console.log(
+              `Bundled Island "${islandId}" ! Results:`,
+              buildResults,
+            );
+
+            /* const bundleResults = await bundleCode([
               {
                 module: {},
                 externalModules: ["React", "ReactDOM"],
@@ -97,10 +130,10 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                   sourceFileName: `${islandId}.tsx`,
                 },
               },
-            ]);
+            ]); */
 
-            await Promise.all(
-              Object.entries(bundleResults).map(async (islandBundle) => {
+            /*await Promise.all(
+              Object.entries(buildResults).map(async (islandBundle) => {
                 const [name, bundle] = islandBundle;
                 console.log("bundleName:", name, islandId);
                 const { code, map } = bundle;
@@ -125,9 +158,9 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                   );
                 }
               }),
-            );
+            ); */
           }),
-        );*/
+        );
       }
     }
 
@@ -286,6 +319,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                 const script: string = `
 <script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.${NODE_ENV_STRICT}.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.${NODE_ENV_STRICT}.js"></script>
+<script crossorigin src="https://unpkg.com/styled-components@5.3.5/dist/styled-components.min.js"></script>
 <script src="/public/islands-runtime.js"></script>
 <script type="text/javascript">
   const start = new Date().getTime();

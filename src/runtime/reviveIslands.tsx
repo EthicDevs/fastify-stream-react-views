@@ -40,13 +40,14 @@ export async function reviveIslands(
         ReactDOM.render(
           <Island {...props} _csr={true} data-islandid={dataIslandIdx} />,
           islandEl,
-          () => revivedIslands.push(dataIslandIdx),
         );
+        revivedIslands.push(dataIslandIdx);
       });
     } catch (err) {
       const errMsg = (err as Error).message;
       console.log(`Could not revive Island "${_islandId}". Error: ${errMsg}`);
     }
   });
+
   return revivedIslands;
 }
