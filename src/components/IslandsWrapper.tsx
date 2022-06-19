@@ -1,14 +1,16 @@
 import React, { FC } from "react";
 
-export const IslandsWrapper: FC<{ islandId: string }> = ({
-  children,
+import { WrapperProps } from "../types";
+
+export const IslandsWrapper: FC<WrapperProps> = ({
+  childrenAsFn,
   islandId,
 }) => {
-  const CommentEl = React.createElement(`!--island-${islandId}--`, null, null);
   return (
     <React.Fragment>
-      {CommentEl}
-      {children}
+      {childrenAsFn({
+        "data-islandid": islandId,
+      })}
     </React.Fragment>
   );
 };

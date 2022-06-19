@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json.schemastore.org/swcrc",
+  "jsc": {
+    "target": "es2017",
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true,
+      "dynamicImport": true
+    },
+    "transform": {
+      "decoratorMetadata": true,
+      "legacyDecorator": true
+    },
+    "externalHelpers": false,
+    "loose": true
+  },
+  "module": {
+    "type": "commonjs",
+    "strict": true,
+    "noInterop": true
+  }
+}

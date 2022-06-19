@@ -17,7 +17,6 @@ export async function walkFolderForFiles<R = FC<unknown>>(
     if (tree != null && tree.type === "directory" && tree.children != null) {
       let result = await tree.children.reduce(async (accP, node) => {
         let acc = await accP;
-        const nodeFile = await import(node.path);
         const nodeKey =
           node.extension == null
             ? node.relativePath
@@ -26,6 +25,14 @@ export async function walkFolderForFiles<R = FC<unknown>>(
                 // Strip extension length, +1 for dot
                 node.relativePath.length - (node.extension.length + 1),
               );
+        if (node.type === "directory") {
+          acc = {
+            ...acc,
+            ...((await walkFolderForFiles(node.path)) as unknown as R),
+          };
+          return acc;
+        }
+        const nodeFile = await import(node.path);
         acc = { ...acc, [nodeKey]: nodeFile.default as R };
         return acc;
       }, Promise.resolve({} as Record<string, R>));

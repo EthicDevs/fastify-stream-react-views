@@ -51,14 +51,19 @@ export interface StreamReactViewPluginOptions<
    * has been received by the client. It allows for self-contained area of
    * interactivity within a server-side rendered view, on the client side.
    *
-   * @example
-   * {
-   *   // ... skip ...
-   *   // assuming file at ./src/server.ext, islands at ./src/islands/*.ext
-   *   islandsFolder: path.resolve(path.join(__dirname, './islands'));
-   * }
+   * @example path.resolve(path.join(__dirname, './islands'))
    */
   islandsFolder?: string;
+  /**
+   * Root folder, folder before the source code where configuration files are.
+   * Usually the project folder path.
+   */
+  rootFolder: string;
+  /**
+   * Dist/build folder, folder where built code is. Used the create the .islands
+   * folder and files within it so they can be served to client easily.
+   */
+  distFolder: string;
   /**
    * Title bar separator character (`${pageTitle} ${titleSeparatorChar} ${appName}`)
    * defaults to: `-`, other cool values includes: `∙`
@@ -71,15 +76,8 @@ export interface StreamReactViewPluginOptions<
   views?: Record<string, React.VFC>;
   /**
    * Path to React components to render as views (w/ ext. jsx or tsx).
-   *
    * View are regular HTML pages made-up of server-side rendered React components.
-   *
-   * @example
-   * {
-   *   // ... skip ...
-   *   // assuming file at ./src/server.ext, views at ./src/views/*.ext
-   *   viewsFolder: path.resolve(path.join(__dirname, './views'));
-   * }
+   * @example path.resolve(path.join(__dirname, './views'))
    */
   viewsFolder?: string;
   /**
@@ -131,4 +129,11 @@ export type StreamReactViewFunction = (
 // Always rendered on the server.
 export type ReactView<P = {}> = VFC<P & { _ssr: true }>;
 // Isomorphic, first-render happens on the server, then client revives it.
-export type ReactIsland<P = {}> = VFC<P & { _csr?: boolean }>;
+export type ReactIsland<P = {}> = VFC<
+  P & { _csr?: boolean; "data-islandid"?: string }
+>;
+
+export interface WrapperProps {
+  islandId: string;
+  childrenAsFn: (props: { "data-islandid": string }) => JSX.Element;
+}

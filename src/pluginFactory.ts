@@ -1,8 +1,12 @@
 // std
+// import { join, resolve } from "path";
+// import { writeFile } from "fs/promises";
 import stream from "stream";
 
 // 3rd party - fastify std
+import type { ComponentType } from "react";
 import type { FastifyPluginAsync } from "fastify";
+// import { bundle as bundleCode } from "@swc/core";
 import makeFastifyPlugin from "fastify-plugin";
 import ssrPrepass from "react-ssr-prepass";
 
@@ -33,7 +37,9 @@ import {
   wrapIslandsWithComponent,
   wrapViewsWithApp,
 } from "./helpers";
-import { ComponentType } from "react";
+
+const NODE_ENV_STRICT =
+  process.env.NODE_ENV === "production" ? "production" : "development";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -61,6 +67,67 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
       if (result != null) {
         islandsById = result;
         console.log("Found islands:", islandsById);
+        // Not working bundle function (see => https://github.com/swc-project/swc/issues/2574)
+        /*await Promise.all(
+          Object.entries(islandsById).map(async ([islandId]) => {
+            const bundleResults = await bundleCode([
+              {
+                module: {},
+                externalModules: ["React", "ReactDOM"],
+                workingDir: options.rootFolder,
+                mode:
+                  NODE_ENV_STRICT === "production"
+                    ? "production"
+                    : ("debug" as any), // does the error comes from typing or docs?
+                target: "browser",
+                entry: {
+                  web: resolve(join(options.islandsFolder!, `${islandId}.tsx`)),
+                },
+                output: {
+                  path: resolve(join(options.distFolder!, ".islands")),
+                  name: `${islandId}.js`,
+                },
+                options: {
+                  filename: `${islandId}.tsx`,
+                  configFile: true,
+                  sourceMaps: true,
+                  isModule: true,
+                  outputPath: resolve(join(options.distFolder, ".islands")),
+                  minify: true,
+                  sourceFileName: `${islandId}.tsx`,
+                },
+              },
+            ]);
+
+            await Promise.all(
+              Object.entries(bundleResults).map(async (islandBundle) => {
+                const [name, bundle] = islandBundle;
+                console.log("bundleName:", name, islandId);
+                const { code, map } = bundle;
+                await writeFile(
+                  resolve(
+                    join(options.distFolder, ".islands", `${islandId}.js`),
+                  ),
+                  code,
+                  { encoding: "utf-8" },
+                );
+                if (map) {
+                  await writeFile(
+                    resolve(
+                      join(
+                        options.distFolder,
+                        ".islands",
+                        `${islandId}.map.js`,
+                      ),
+                    ),
+                    map,
+                    { encoding: "utf-8" },
+                  );
+                }
+              }),
+            );
+          }),
+        );*/
       }
     }
 
@@ -146,6 +213,9 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
 
             const reactView = viewsById[view];
             const viewEl = buildViewWithProps(reactView, viewProps);
+
+            let islandTypesCounters: Record<string, number> = {};
+
             await ssrPrepass(viewEl, (element) => {
               const el = element as unknown as ComponentType & {
                 type: string;
@@ -161,9 +231,16 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
 
               if (island) {
                 const [islandId] = island;
+                islandTypesCounters = {
+                  ...islandTypesCounters,
+                  [islandId]:
+                    islandId in islandTypesCounters
+                      ? islandTypesCounters[islandId] + 1
+                      : 0,
+                };
                 islandsPropsById = {
                   ...islandsPropsById,
-                  [islandId]: {
+                  [`${islandId}$$${islandTypesCounters[islandId]}`]: {
                     ...((element as any).props || {}),
                   },
                 };
@@ -206,13 +283,9 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                 // Inject Interactive components and their props.
                 const islandsEntries = Object.entries(islandsById);
                 const islandsPropsEntries = Object.entries(islandsPropsById);
-                const reactEnv =
-                  process.env.NODE_ENV === "production"
-                    ? "production"
-                    : "development";
                 const script: string = `
-<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.${reactEnv}.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.${reactEnv}.js"></script>
+<script crossorigin src="https://unpkg.com/react@17.0.2/umd/react.${NODE_ENV_STRICT}.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.${NODE_ENV_STRICT}.js"></script>
 <script src="/public/islands-runtime.js"></script>
 <script type="text/javascript">
   const start = new Date().getTime();
@@ -228,14 +301,14 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
     .replace(/react_[0-9]/gi, "React")}
   ;var islands = {
     ${islandsEntries
-      .map(([k], islandIdx) => `"${k}": $$${islandIdx}`)
+      .map(([k], islandIdx) => `    "${k}": $$${islandIdx}`)
       .join(",\n")
       .replace(/react_[0-9]\.default/gi, "React")
       .replace(/react_[0-9]/gi, "React")}
   };
   var islandsProps = {
     ${islandsPropsEntries
-      .map(([k, v]) => `"${k}": ${JSON.stringify(v)}`)
+      .map(([k, v]) => `    "${k}": ${JSON.stringify(v)}`)
       .join(",\n")
       .replace(/react_[0-9]\.default/gi, "React")
       .replace(/react_[0-9]/gi, "React")}
@@ -246,7 +319,9 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
     console.log(\`Done in \${end - start}ms\`);
   }
 
-  reviveIslands(islands, islandsProps)
+  var islandsEls = document.querySelectorAll('[data-islandid]');
+
+  reviveIslands(islands, islandsProps, islandsEls)
     .then((revivedIslands) => {
       console.log("Revived Islands:", revivedIslands);
       printDuration();
