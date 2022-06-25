@@ -37,12 +37,14 @@
     "ci": "run-s test build"
   },
   "dependencies": {
+    "@babel/plugin-transform-modules-umd": "^7.18.0",
     "dree": "^3.3.7",
     "esbuild": "^0.14.46",
     "esbuild-node-externals": "^1.4.1",
     "fastify": "^3.27.4",
     "fastify-plugin": "^3.0.1",
     "react-ssr-prepass": "^1.5.0",
+    "terser": "^5.14.1",
     "transform-modules-eumd": "^1.0.0"
   },
   "peerDependencies": {

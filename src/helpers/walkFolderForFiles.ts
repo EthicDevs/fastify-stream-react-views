@@ -3,7 +3,7 @@ import { scanAsync as walkFolder } from "dree";
 
 export async function walkFolderForFiles<R = FC<unknown>>(
   path: string,
-): Promise<Record<string, R> | null> {
+): Promise<Record<string, [string, R]> | null> {
   try {
     const tree = await walkFolder(path, {
       depth: 5,
@@ -33,9 +33,9 @@ export async function walkFolderForFiles<R = FC<unknown>>(
           return acc;
         }
         const nodeFile = await import(node.path);
-        acc = { ...acc, [nodeKey]: nodeFile.default as R };
+        acc = { ...acc, [nodeKey]: [node.path, nodeFile.default as R] };
         return acc;
-      }, Promise.resolve({} as Record<string, R>));
+      }, Promise.resolve({} as Record<string, [string, R]>));
 
       return result;
     }

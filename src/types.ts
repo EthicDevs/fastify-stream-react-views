@@ -53,7 +53,7 @@ export interface StreamReactViewPluginOptions<
    *
    * @example path.resolve(path.join(__dirname, './islands'))
    */
-  islandsFolder?: string;
+  islandsFolder: string;
   /**
    * Root folder, folder before the source code where configuration files are.
    * Usually the project folder path.
@@ -70,16 +70,11 @@ export interface StreamReactViewPluginOptions<
    **/
   titleSeparatorChar?: string;
   /**
-   * An hashmap of routes, this is the preferred way to use this module main because
-   * the `viewsFolder` option relies on import/require wizardry.
-   */
-  views?: Record<string, React.VFC>;
-  /**
    * Path to React components to render as views (w/ ext. jsx or tsx).
    * View are regular HTML pages made-up of server-side rendered React components.
    * @example path.resolve(path.join(__dirname, './views'))
    */
-  viewsFolder?: string;
+  viewsFolder: string;
   /**
    * An object to be merged later with view context.
    */

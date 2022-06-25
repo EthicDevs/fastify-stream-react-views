@@ -1,31 +1,32 @@
 // std
-import { join, resolve } from "path";
 import stream from "stream";
 
 // 3rd party - fastify std
 import type { ComponentType } from "react";
 import type { FastifyPluginAsync } from "fastify";
-import { analyzeMetafile, build as buildCode } from "esbuild";
+
 import makeFastifyPlugin from "fastify-plugin";
-import { nodeExternalsPlugin } from "esbuild-node-externals";
+import { MinifyOutput, minify as minifyCode } from "terser";
 import ssrPrepass from "react-ssr-prepass";
 
 // lib
 import type {
   ReactIsland,
-  ReactView,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
   ViewContext,
   ViewContextBase,
 } from "./types";
+
 import {
   FASTIFY_VERSION_TARGET,
   HTML_DOCTYPE,
   HTML_MIME_TYPE,
 } from "./constants";
+
 import { DefaultAppComponent } from "./components/DefaultAppComponent";
 import { IslandsWrapper } from "./components/IslandsWrapper";
+
 import {
   buildViewWithProps,
   getHeadTagsStr,
@@ -33,126 +34,27 @@ import {
   isStyledComponentsAvailable,
   renderViewToStaticStream,
   renderViewToStream,
-  walkFolderForFiles,
   wrapIslandsWithComponent,
   wrapViewsWithApp,
 } from "./helpers";
+
+import { collectResources, generateManifest } from "./core";
 
 const NODE_ENV_STRICT =
   process.env.NODE_ENV === "production" ? "production" : "development";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
-    if (options?.views == null && options?.viewsFolder == null) {
-      throw new Error(`You have not provided either a "views" config key or a "viewsFolder" config key.
-Please verify your "views/" folder aswell as the "views" config key in your "fastify-stream-react-views" register config.`);
-    }
-
-    let viewsById: { [viewId: string]: ReactView } = {};
-    let islandsById: { [islandId: string]: ReactIsland } = {};
     let islandsPropsById: { [islandId: string]: Record<string, unknown> } = {};
+    let { islandsById, viewsById } = await collectResources(options);
+    const manifest = await generateManifest({
+      islands: islandsById,
+      options,
+      views: viewsById,
+    });
 
-    if (options != null && options.viewsFolder != null) {
-      const result = await walkFolderForFiles<ReactView>(options.viewsFolder);
-      if (result != null) {
-        viewsById = result;
-        console.log("Found views:", viewsById);
-      }
-    }
-
-    if (options != null && options.islandsFolder != null) {
-      const result = await walkFolderForFiles<ReactIsland>(
-        options.islandsFolder,
-      );
-      if (result != null) {
-        islandsById = result;
-        console.log("Found islands:", islandsById);
-
-        /*const regeneratorRuntime = transformSync(
-          readFileSync(
-            "node_modules/regenerator-runtime/runtime.js",
-          ).toString(),
-          { minify: true, target: "es5" },
-        ).code;*/
-
-        await Promise.all(
-          Object.entries(islandsById).map(async ([islandId]) => {
-            console.log(`Bundling Island "${islandId}" for browser (esm) ...`);
-            const buildResults = await buildCode({
-              entryPoints: {
-                [`${islandId}.bundle`]: resolve(
-                  join(options.islandsFolder!, `${islandId}.tsx`),
-                ),
-              },
-              outdir: resolve(join(options.rootFolder!, "public", ".islands")),
-              bundle: true,
-              loader: { ".js": "jsx" },
-              minify: true,
-              minifyIdentifiers: false,
-              metafile: true,
-              target: "es6",
-              absWorkingDir: options.rootFolder,
-              charset: "utf8",
-              globalName: islandId,
-              external: ["react", "react-dom", "styled-components"],
-              jsx: "transform",
-              keepNames: true,
-              write: true,
-              sourcemap: true,
-              format: "esm",
-              plugins: [nodeExternalsPlugin()],
-              banner: {
-                js: `var modules = {};`,
-              },
-              footer: {
-                js: `(function (root, factory) {
-                  if (typeof define === 'function' && define.amd) {
-                    define(factory);
-                  } else if (typeof module === 'object' && module.exports) {
-                    module.exports = factory();
-                  } else {
-                    root.${islandId} = factory();
-                  }
-                }(typeof self !== 'undefined' ? self : this, () => ${islandId}));`,
-              },
-            });
-
-            /*const outputsEntries = Object.entries(buildResults.outputFiles!);
-            await Promise.all(
-              outputsEntries.map(async ([outputPath, output]) => {
-                const umdResult = transformCode(output.text, {
-                  plugins: ["@babel/transform-modules-umd"],
-                });
-                if (umdResult != null) {
-                  console.log("outputPath:", outputPath);
-                  console.log("outputCode:", umdResult.code?.substring(0, 256));
-                  await writeFile(
-                    outputPath,
-                    umdResult.code != null ? umdResult.code : "",
-                    { encoding: "utf-8" },
-                  );
-                }
-              }),
-            );*/
-
-            let bundleAnalysisText = await analyzeMetafile(
-              buildResults.metafile,
-              {
-                verbose: true,
-              },
-            );
-
-            console.log(
-              `Bundled Island "${islandId}" for browser (esm) ! Results:`,
-              bundleAnalysisText, // buildResults.outputFiles,
-            );
-          }),
-        );
-      }
-    }
-
-    if (options != null && options.views != null) {
-      viewsById = { ...viewsById, ...options.views };
+    if (manifest == null) {
+      console.error("Could not generate manifest. Something went wrong.");
     }
 
     viewsById = wrapViewsWithApp(
@@ -190,11 +92,13 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
             // Write the html5 doctype
             endpointStream.write(HTML_DOCTYPE);
 
-            let titleStr = options?.appName || "Fastify + React = ❤️";
+            let titleStr = options?.appName || null;
             if (props != null && "title" in props && props.title != null) {
-              titleStr = `${props.title} ${
-                options?.titleSeparatorChar || "-"
-              } ${titleStr}`;
+              titleStr = `${props.title}${
+                titleStr != null
+                  ? ` ${options?.titleSeparatorChar || " - "} `
+                  : ""
+              }${titleStr}`;
             }
 
             const htmlTags = {
@@ -233,7 +137,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               },
             };
 
-            const reactView = viewsById[view];
+            const [___, reactView] = viewsById[view];
             const viewEl = buildViewWithProps(reactView, viewProps);
 
             let islandTypesCounters: Record<string, number> = {};
@@ -260,7 +164,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                       ? islandTypesCounters[islandId] + 1
                       : 0,
                 };
-                let [_, IslandC] = island;
+                let [_, [__, IslandC]] = island;
                 encounteredIslandsById = {
                   ...encounteredIslandsById,
                   [islandId]: IslandC,
@@ -276,7 +180,7 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
               return undefined;
             });
 
-            const onEndCallback = (err?: unknown) => {
+            const onEndCallback = async (err?: unknown) => {
               if (err != null) {
                 const error = err as Error;
                 console.error(`Cannot render view: "${view}". Error:\n`, error);
@@ -318,7 +222,57 @@ Please verify your "views/" folder aswell as the "views" config key in your "fas
                     ? `production.min`
                     : `development`;
                 const script: string = `
-<script type="module" src="/public/.cdn/react.${fileForEnv}.js"></script>
+import {reviveIslands} from "/public/islands-runtime.js";
+
+const start = new Date().getTime();
+console.log(\`[\${start}] Reviving Islands for view "${view}"...\`);
+
+var islands = {
+${encounteredIslandsEntries
+  // .map(([k], islandIdx) => `    "${k}": $$${islandIdx}`)
+  .map(([islandId]) => `  "${islandId}": ${islandId}.default`)
+  .join(",\n")
+  .replace(/react_[0-9]\.default/gi, "React")
+  .replace(/react_[0-9]/gi, "React")}
+};
+
+var islandsProps = {
+${islandsPropsEntries
+  .map(([k, v]) => `  "${k}": ${JSON.stringify(v)}`)
+  .join(",\n")},
+};
+
+function printDuration() {
+  const end = new Date().getTime();
+  console.log(\`[\${end}] Done in \${end - start}ms\`);
+}
+
+var islandsEls = document.querySelectorAll('[data-islandid]');
+
+reviveIslands(islands, islandsProps, islandsEls)
+  .then((revivedIslands) => {
+    console.log("Revived Islands:", revivedIslands);
+    printDuration();
+  })
+  .catch((err) => {
+    console.error("Could not revive Islands. Error:", err);
+    printDuration();
+  });
+`;
+                // Important, close the body & html tags.
+                let minifiedCode: null | MinifyOutput = null;
+                try {
+                  minifiedCode = await minifyCode(script);
+                } catch (_) {
+                  minifiedCode = null;
+                }
+                let minifiedScript =
+                  minifiedCode != null ? minifiedCode.code || script : script;
+
+                // Only send if page has islands we've been able to find
+                if (encounteredIslandsEntries.length > 0) {
+                  endpointStream.end(
+                    `<script type="module" src="/public/.cdn/react.${fileForEnv}.js"></script>
 <script type="module" src="/public/.cdn/react-is.${fileForEnv}.js"></script>
 <script type="module" src="/public/.cdn/react-dom.${fileForEnv}.js"></script>
 <script type="module" src="/public/.cdn/styled-components.production.min.js"></script>
@@ -329,54 +283,14 @@ ${encounteredIslandsEntries
       `<script type="module" src="/public/.islands/${islandId}.bundle.js"></script>`,
   )
   .join("\n")}
-<script type="module">
-import {reviveIslands} from "/public/islands-runtime.js";
-
-${encounteredIslandsEntries
-  .map(
-    ([islandId]) =>
-      `  import ${islandId} from "/public/.islands/${islandId}.bundle.js"`,
-  )
-  .join(";\n")};
-
-  const start = new Date().getTime();
-  console.log(\`[\${start}] Reviving Islands for view "${view}"...\`);
-
-  var islands = {
-${encounteredIslandsEntries
-  // .map(([k], islandIdx) => `    "${k}": $$${islandIdx}`)
-  .map(([islandId]) => `    "${islandId}": ${islandId}`)
-  .join(",\n")
-  .replace(/react_[0-9]\.default/gi, "React")
-  .replace(/react_[0-9]/gi, "React")}
-  };
-
-  var islandsProps = {
-${islandsPropsEntries
-  .map(([k, v]) => `    "${k}": ${JSON.stringify(v)}`)
-  .join(",\n")},
-  };
-
-  function printDuration() {
-    const end = new Date().getTime();
-    console.log(\`[\${end}] Done in \${end - start}ms\`);
-  }
-
-  var islandsEls = document.querySelectorAll('[data-islandid]');
-
-  reviveIslands(islands, islandsProps, islandsEls)
-    .then((revivedIslands) => {
-      console.log("Revived Islands:", revivedIslands);
-      printDuration();
-    })
-    .catch((err) => {
-      console.error("Could not revive Islands. Error:", err);
-      printDuration();
-    });
-</script>
-`;
-                // Important, close the body & html tags.
-                endpointStream.end(`${script}</body></html>`);
+<script type="module">${minifiedScript}</script></body></html>`.replace(
+                      /[\n\r]+/g,
+                      "",
+                    ),
+                  );
+                } else {
+                  endpointStream.end(`</body></html>`);
+                }
               }
 
               return resolve(this.send(endpointStream));

@@ -2,12 +2,12 @@ import React, { ComponentType } from "react";
 
 import { ReactIsland, WrapperProps } from "../types";
 
-type IslandsWrappedWithComponent<T> = Record<string, ReactIsland<T>>;
+type IslandsWrappedWithComponent<T> = Record<string, [string, ReactIsland<T>]>;
 
 export function wrapIslandsWithComponent<
   T extends Record<string, unknown> = Record<string, unknown>,
 >(
-  islands: Record<string, ReactIsland<T>>,
+  islands: Record<string, [string, ReactIsland<T>]>,
   WrapperComponent: ComponentType<WrapperProps>,
 ): IslandsWrappedWithComponent<T> {
   const entries = Object.entries(islands);
@@ -32,10 +32,16 @@ export function wrapIslandsWithComponent<
     return wrappedView;
   };
 
-  const wrappedViews = entries.reduce((acc, [islandId, Island]) => {
-    acc = { ...acc, [islandId]: wrapWithComponent(islandId, Island) };
-    return acc;
-  }, {} as typeof islands);
+  const wrappedViews = entries.reduce(
+    (acc, [islandId, [islandPath, Island]]) => {
+      acc = {
+        ...acc,
+        [islandId]: [islandPath, wrapWithComponent(islandId, Island)],
+      };
+      return acc;
+    },
+    {} as IslandsWrappedWithComponent<T>,
+  );
 
   return wrappedViews;
 }
