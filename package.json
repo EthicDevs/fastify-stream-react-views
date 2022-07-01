@@ -33,11 +33,12 @@
     "dev": "nodemon -e ts,.env -w .env -w . -x 'run-s build:ts test'",
     "build:clean": "rm -rf ./dist",
     "build:ts": "tsc",
-    "build": "run-s build:clean build:ts",
+    "build": "date && run-s build:clean build:ts",
     "ci": "run-s test build"
   },
   "dependencies": {
     "@babel/plugin-transform-modules-umd": "^7.18.0",
+    "babel-plugin-styled-components": "^2.0.7",
     "dree": "^3.3.7",
     "esbuild": "^0.14.46",
     "esbuild-node-externals": "^1.4.1",

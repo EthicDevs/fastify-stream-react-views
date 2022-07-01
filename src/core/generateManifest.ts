@@ -1,7 +1,7 @@
 // std
 import { createHash } from "crypto";
 import { join, resolve } from "path";
-import { writeFile } from "fs/promises";
+import { stat, readFile, writeFile } from "fs/promises";
 
 // lib
 import type {
@@ -10,8 +10,9 @@ import type {
   StreamReactViewPluginOptions,
 } from "../types";
 
+import { default as bundleIslands } from "./bundleIslands";
+import { default as bundleRuntime } from "./bundleRuntime";
 import { walkFolderForFiles } from "../helpers";
-import bundleIslands from "./islands/bundleIslands";
 
 type ManifestResource<
   B extends ReactView | ReactIsland = ReactView | ReactIsland,
@@ -75,7 +76,7 @@ export default async function generateManifest({
               .update(`${viewId}-${viewPath}-${View.toString()}`)
               .digest("hex"),
             id: viewId,
-            pathSource: viewPath.replace(options.rootFolder, ""),
+            pathSource: "." + viewPath.replace(options.rootFolder, ""),
             res: View,
             type: "ReactView",
           },
@@ -108,15 +109,17 @@ export default async function generateManifest({
               .update(`${islandId}-${islandPath}-${Island.toString()}`)
               .digest("hex"),
             id: islandId,
-            pathSource: islandPath.replace(options.rootFolder, ""),
-            pathBundle: resolve(
-              join(
-                options.rootFolder,
-                "public",
-                ".islands",
-                `${islandId}.bundle.js`,
-              ),
-            ).replace(options.rootFolder, ""),
+            pathSource: "." + islandPath.replace(options.rootFolder, ""),
+            pathBundle:
+              "." +
+              resolve(
+                join(
+                  options.rootFolder,
+                  "public",
+                  ".islands",
+                  `${islandId}.bundle.js`,
+                ),
+              ).replace(options.rootFolder, ""),
             res: Island,
             type: "ReactIsland",
           },
@@ -128,11 +131,38 @@ export default async function generateManifest({
     await bundleIslands(_islands, options);
   }
 
+  await bundleRuntime(options);
+
   try {
     console.log("[ssr] Generating Manifest...");
-    const manifestPath = resolve(join(options.distFolder, "manifest.json"));
+    const manifestPath = resolve(join(options.rootFolder, "app.manifest.json"));
     const manifestStr = JSON.stringify(manifest, null, 2);
-    await writeFile(manifestPath, manifestStr, { encoding: "utf-8" });
+
+    try {
+      const manifestStat = await stat(manifestPath);
+      if (manifestStat.isFile()) {
+        const currentManifestContents = await readFile(manifestPath, {
+          encoding: "utf-8",
+        });
+        const { _generatedAtUnix: _, ...previousManifest } = JSON.parse(
+          currentManifestContents,
+        );
+        const { _generatedAtUnix: __, ...currentManifest } = manifest;
+        // compare stable values
+        if (
+          JSON.stringify(previousManifest) === JSON.stringify(currentManifest)
+        ) {
+          console.log("[ssr] Manifest did not change.");
+          return manifest;
+        }
+      }
+    } catch (_) {
+      // Do nothing in case of errors, just write file.
+    }
+
+    await writeFile(manifestPath, [manifestStr, "\n"].join(""), {
+      encoding: "utf-8",
+    });
     console.log("[ssr] Manifest generated at:", manifestPath);
     return manifest;
   } catch (err) {

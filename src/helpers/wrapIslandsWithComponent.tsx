@@ -1,6 +1,6 @@
 import React, { ComponentType } from "react";
 
-import { ReactIsland, WrapperProps } from "../types";
+import type { ReactIsland, WrapperProps } from "../types";
 
 type IslandsWrappedWithComponent<T> = Record<string, [string, ReactIsland<T>]>;
 
@@ -11,32 +11,39 @@ export function wrapIslandsWithComponent<
   WrapperComponent: ComponentType<WrapperProps>,
 ): IslandsWrappedWithComponent<T> {
   const entries = Object.entries(islands);
-
   const wrapWithComponent = (
     islandId: string,
     Island: ReactIsland<T>,
   ): ReactIsland<T> => {
+    if (Island.islandId != null) return Island;
+    let islandIdx = -1;
     const wrappedView = (hocProps: T) => {
+      islandIdx += 1;
+      const islandIdxInstance = `${islandId}$$${islandIdx}`;
+      console.log("wrappedView/", islandIdxInstance);
       return (
         <WrapperComponent
-          islandId={islandId}
+          islandId={islandIdxInstance}
           childrenAsFn={(props) => <Island {...hocProps} {...props} _csr />}
         />
       );
     };
-    wrappedView.displayName = `${
-      WrapperComponent.displayName || "WrappedIsland"
-    }(${Island.displayName || Island.name})`;
+    wrappedView.$type = "ReactIsland" as const;
+    wrappedView.displayName = `${Island.displayName || Island.name}`;
     wrappedView.island = Island;
-    wrappedView.islandId = islandId;
+    wrappedView.islandId = wrappedView.displayName;
     return wrappedView;
   };
 
   const wrappedViews = entries.reduce(
     (acc, [islandId, [islandPath, Island]]) => {
+      islandId = `${Island.displayName || Island.name}`;
       acc = {
         ...acc,
-        [islandId]: [islandPath, wrapWithComponent(islandId, Island)],
+        [islandId]: [
+          islandPath,
+          wrapWithComponent(islandId, Island),
+        ],
       };
       return acc;
     },

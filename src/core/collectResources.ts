@@ -5,11 +5,22 @@ import type {
   ReactView,
 } from "../types";
 
-import { walkFolderForFiles } from "../helpers";
+import { DefaultAppComponent } from "../components/DefaultAppComponent";
+import { IslandsWrapper } from "../components/IslandsWrapper";
+import {
+  walkFolderForFiles,
+  wrapIslandsWithComponent,
+  wrapViewsWithApp,
+} from "../helpers";
 
 export default async function collectResources(
   options: StreamReactViewPluginOptions,
 ) {
+  const AppComponent =
+    options != null && options.appComponent != null
+      ? options.appComponent
+      : DefaultAppComponent;
+
   let islandsById: { [islandId: string]: [string, ReactIsland] } = {};
   let viewsById: { [viewId: string]: [string, ReactView] } = {};
 
@@ -30,7 +41,7 @@ export default async function collectResources(
   }
 
   return {
-    islandsById,
-    viewsById,
+    islandsById: wrapIslandsWithComponent(islandsById, IslandsWrapper),
+    viewsById: wrapViewsWithApp(viewsById, AppComponent),
   };
 }

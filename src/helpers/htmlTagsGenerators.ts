@@ -3,6 +3,7 @@ import {
   HeadTagLink,
   HeadTagMeta,
   HeadTagMetaCharset,
+  ScriptTag,
 } from "../types";
 
 function isMetaCharsetTag(tag: HeadTag): tag is HeadTagMetaCharset {
@@ -73,7 +74,7 @@ export function getHtmlTagsStr({
   lang?: string | undefined;
   dir?: string | undefined;
 }): string {
-  const stringBuilder = [];
+  const stringBuilder = [] as string[];
 
   if (lang != null) {
     stringBuilder.push(`lang="${lang}"`);
@@ -84,4 +85,18 @@ export function getHtmlTagsStr({
   }
 
   return stringBuilder.join(" ");
+}
+
+export function getScriptTagsStr(scriptTags: ScriptTag[]) {
+  const stringBuilder = [] as string[];
+
+  scriptTags.map(({ src, textContent, type }) => {
+    if (src != null) {
+      stringBuilder.push(`<script type=${type} src=${src}></script>`);
+    } else {
+      stringBuilder.push(`<script type=${type}>${textContent}</script>`);
+    }
+  });
+
+  return stringBuilder.join("\n");
 }

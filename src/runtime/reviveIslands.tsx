@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-import { ReactIsland } from "../types";
+import type { ReactIsland } from "../types";
 
 /**
  * A function that given an HashMap of Islands, and an HashMap of Islands Props,
@@ -20,8 +20,11 @@ export async function reviveIslands(
   let revivedIslands: string[] = [];
   islandsEls.forEach((islandEl, islandIdx) => {
     let _islandId: string = islandEl.id || `${islandIdx}`;
+    console.log("_islandId:", _islandId);
+    console.log("islandIdx:", islandIdx);
+    console.log("islandEl:", islandEl);
     try {
-      const dataIslandIdx = islandEl.dataset.islandId;
+      const dataIslandIdx = islandEl.dataset.islandid;
       if (dataIslandIdx == null || dataIslandIdx.includes("$$") === false)
         return;
       const [realIslandId, _] = dataIslandIdx.split("$$");

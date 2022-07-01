@@ -23,7 +23,10 @@ export function wrapViewsWithApp<
         </App>
       );
     };
+    wrappedView.$type = "ReactView" as const;
     wrappedView.displayName = `WithApp(${ViewEl.displayName || viewName})`;
+    wrappedView.viewId = viewName;
+    wrappedView.view = ViewEl;
     return wrappedView;
   };
 

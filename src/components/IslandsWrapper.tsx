@@ -1,16 +1,17 @@
 import React, { FC } from "react";
 
-import { WrapperProps } from "../types";
+import type { WrapperProps } from "../types";
 
 export const IslandsWrapper: FC<WrapperProps> = ({
   childrenAsFn,
   islandId,
 }) => {
+  console.log("IslandsWrapper/islandId:", islandId);
   return (
-    <React.Fragment>
+    <div key={islandId} data-islandid={islandId}>
       {childrenAsFn({
         "data-islandid": islandId,
       })}
-    </React.Fragment>
+    </div>
   );
 };

@@ -114,6 +114,18 @@ export type HeadTagLink = {
 
 export type HeadTag = HeadTagMeta | HeadTagMetaCharset | HeadTagLink;
 
+export type ScriptTag =
+  | {
+      type: string;
+      src: string;
+      textContent?: undefined;
+    }
+  | {
+      type: string;
+      src?: undefined;
+      textContent: string;
+    };
+
 export type StreamReactViewFunction = (
   this: FastifyReply,
   view: string,
@@ -122,11 +134,18 @@ export type StreamReactViewFunction = (
 ) => Promise<FastifyReply>;
 
 // Always rendered on the server.
-export type ReactView<P = {}> = VFC<P & { _ssr: true }>;
+export type ReactView<P = {}> = VFC<P & { _ssr: true }> & {
+  viewId?: string;
+  $type?: "ReactView";
+};
+
 // Isomorphic, first-render happens on the server, then client revives it.
 export type ReactIsland<P = {}> = VFC<
   P & { _csr?: boolean; "data-islandid"?: string }
->;
+> & {
+  islandId?: string;
+  $type?: "ReactIsland";
+};
 
 export interface WrapperProps {
   islandId: string;
