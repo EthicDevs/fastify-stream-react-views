@@ -30,6 +30,15 @@ export {
   makeIsland,
 } from "./core";
 
+/* Helpers functions */
+export {
+  buildViewWithProps,
+  endStreamWithHtmlError,
+  isStyledComponentsAvailable,
+  walkFolderForFiles,
+  wrapComponent,
+} from "./helpers";
+
 /* Register function */
 import { makePlugin } from "./pluginFactory";
 
