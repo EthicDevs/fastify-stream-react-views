@@ -47,11 +47,11 @@ export async function makePageScript(
   log('islandsEls:', islandsEls);
   log('islandsProps:', islandsProps);
 
-  function afterRevival(resource) {
-    if (Array.isArray(resource)) {
-      log("Revived Islands:", resource);
+  function afterRevival(revivalResults) {
+    if (revivalResults != null && Array.isArray(revivalResults)) {
+      log("Revived Islands:", revivalResults);
     } else {
-      log("Could not revive Islands. Error:", resource);
+      log("Could not revive Islands. Error:", revivalResults);
     }
     const e = new Date().getTime();
     const duration = e - s;

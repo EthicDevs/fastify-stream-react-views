@@ -17,7 +17,6 @@ export default function makeIsland<
   T extends Record<string, unknown> = Record<string, unknown>,
 >(Island: ReactIsland<T>): ReactIsland<T> {
   const isServerSide = typeof window === "undefined";
-  console.log('isServerSide:', isServerSide);
   const islandId = Island.islandId || Island.displayName || Island.name;
   if (isServerSide) {
     const islands = wrapIslandsWithComponent(

@@ -20,7 +20,6 @@ export function wrapIslandsWithComponent<
     const wrappedView = (hocProps: T) => {
       islandIdx += 1;
       const islandIdxInstance = `${islandId}$$${islandIdx}`;
-      console.log("wrappedView/", islandIdxInstance);
       return (
         <WrapperComponent
           islandId={islandIdxInstance}
@@ -40,10 +39,7 @@ export function wrapIslandsWithComponent<
       islandId = `${Island.displayName || Island.name}`;
       acc = {
         ...acc,
-        [islandId]: [
-          islandPath,
-          wrapWithComponent(islandId, Island),
-        ],
+        [islandId]: [islandPath, wrapWithComponent(islandId, Island)],
       };
       return acc;
     },

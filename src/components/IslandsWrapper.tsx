@@ -6,7 +6,6 @@ export const IslandsWrapper: FC<WrapperProps> = ({
   childrenAsFn,
   islandId,
 }) => {
-  console.log("IslandsWrapper/islandId:", islandId);
   return (
     <div key={islandId} data-islandid={islandId}>
       {childrenAsFn({

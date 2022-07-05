@@ -20,9 +20,6 @@ export async function reviveIslands(
   let revivedIslands: string[] = [];
   islandsEls.forEach((islandEl, islandIdx) => {
     let _islandId: string = islandEl.id || `${islandIdx}`;
-    console.log("_islandId:", _islandId);
-    console.log("islandIdx:", islandIdx);
-    console.log("islandEl:", islandEl);
     try {
       const dataIslandIdx = islandEl.dataset.islandid;
       if (dataIslandIdx == null || dataIslandIdx.includes("$$") === false)
