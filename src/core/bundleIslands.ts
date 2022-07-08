@@ -15,6 +15,7 @@ export default async function bundleIslands(
         try {
           console.log(`[ssr] Bundling Island "${islandId}" for browser...`);
           await bundleCode({
+            externalDependencies: options?.externalDependencies,
             globalName: islandId,
             minify: process.env.NODE_ENV === "production",
             entryFile: resolve(join(options.islandsFolder, `${islandId}.tsx`)),

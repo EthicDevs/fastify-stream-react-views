@@ -11,6 +11,7 @@ export default async function bundleRuntime(
   try {
     console.log(`[ssr] Bundling Islands runtime for browser...`);
     await bundleCode({
+      externalDependencies: options?.externalDependencies,
       globalName: "fastifyStreamReactViews",
       minify: process.env.NODE_ENV === "production",
       entryFile: resolve(join(__dirname, "../../src/runtime/index.ts")),

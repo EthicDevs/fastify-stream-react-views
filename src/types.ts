@@ -45,6 +45,14 @@ export interface StreamReactViewPluginOptions<
    */
   commonProps?: CP;
   /**
+   * External dependencies to NOT be bundled within the islands' bundle.
+   * Those will instead needed to be placed in a .cdn folde in your PUBLIC_FOLDER
+   * as umd modules so they can be cached by the browser once.
+   * If not provided a sensible default will be used; see. DefaultExternalDependencies
+   * Key is the ES/NPM dependency name, Value is the UMD Global export name for the module.
+   **/
+  externalDependencies?: Record<string, string>;
+  /**
    * Path to React components to render as islands (w/ ext. jsx or tsx).
    *
    * Islands are regular components that get "revived" on the client once SSR
