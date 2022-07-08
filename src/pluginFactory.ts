@@ -121,6 +121,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 props = {};
               }
               props.title = error.name;
+              props.error = error;
               // await endStreamWithHtmlError(
               //   endpointStream,
               //   error,
