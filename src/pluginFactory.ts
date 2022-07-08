@@ -25,6 +25,7 @@ import {
   NODE_ENV_STRICT,
 } from "./constants";
 
+import { InternalViewKind } from "./enums/InternalViewKind";
 import { collectResources, generateManifest } from "./core";
 import {
   buildViewWithProps,
@@ -38,14 +39,42 @@ import {
   makePageScript,
   renderViewToStaticStream,
   renderViewToStream,
+  wrapViewsWithApp,
 } from "./helpers";
+
+import DefaultInternalErrorView from "./components/DefaultInternalErrorView";
+import DefaultNotFoundErrorView from "./components/DefaultNotFoundErrorView";
+import { DefaultAppComponent } from "./components/DefaultAppComponent";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
-    // Walk folders specified in options (islandsFolder, viewsFolder) and collect resources
-    const { islandsById, viewsById } = await collectResources(options);
+    // Walk folders specified in options (islandsFolder, viewsFolder)
+    // and collect resources.
+    let { islandsById, viewsById } = await collectResources(options);
 
-    // Generate and write manifest in rootFolder
+    // Get App component either from user override or from default component.
+    const AppComponent =
+    options != null && options.appComponent != null
+      ? options.appComponent
+      : DefaultAppComponent;
+
+    // Add internal views so user can override only if needed.
+    const defaultViewsById = wrapViewsWithApp({
+      [InternalViewKind.INTERNAL_ERROR_VIEW]: [
+        InternalViewKind.INTERNAL_ERROR_VIEW, DefaultInternalErrorView as never
+      ],
+      [InternalViewKind.NOT_FOUND_ERROR_VIEW]: [
+        InternalViewKind.NOT_FOUND_ERROR_VIEW, DefaultNotFoundErrorView
+      ],
+    }, AppComponent);
+
+    // Make sure viewsById is at the end so user overrides take effect.
+    viewsById = {
+      ...defaultViewsById,
+      ...viewsById,
+    }
+
+    // Generate and write manifest in rootFolder.
     const manifest = await generateManifest({
       islands: islandsById,
       views: viewsById,
@@ -86,14 +115,19 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 `Make sure that a file for view "${view}" exists and it exports default a 'ReactView' type.`,
               );
               const error = new Error(errorMessage.join("\n"));
-              error.name = "ViewNotFoundError";
-              await endStreamWithHtmlError(
-                endpointStream,
-                error,
-                options.rootFolder,
-              );
-              logRequestEnd(reqStartAtUnix, this.request, view, error);
-              return resolve(this.send(endpointStream));
+              error.name = InternalViewKind.INTERNAL_ERROR_VIEW;
+              view = error.name;
+              if (!props) {
+                props = {};
+              }
+              props.title = error.name;
+              // await endStreamWithHtmlError(
+              //   endpointStream,
+              //   error,
+              //   options.rootFolder,
+              // );
+              // logRequestEnd(reqStartAtUnix, this.request, view, error);
+              // return resolve(this.send(endpointStream));
             }
 
             // Get the page title (for use in <title> tag)

@@ -22,8 +22,12 @@ export {
   ViewContextBase,
 } from "./types";
 
+/* Enums */
+export { InternalViewKind } from "./enums/InternalViewKind";
+
 /* Core functions */
 export {
+  bundleCode,
   bundleIslands,
   collectResources,
   generateManifest,

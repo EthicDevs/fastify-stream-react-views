@@ -14,28 +14,33 @@ import { default as bundleIslands } from "./bundleIslands";
 import { default as bundleRuntime } from "./bundleRuntime";
 import { walkFolderForFiles } from "../helpers";
 
-type ManifestResource<
+type ManifestResourceV2<
   B extends ReactView | ReactIsland = ReactView | ReactIsland,
 > = {
   hash: string;
-  id: string;
   pathSource: string;
   pathBundle?: string;
+  pathSourceMap?: string;
   res: B;
-  type: "Asset" | "ReactView" | "ReactIsland";
 };
 
-interface IManifest {
+type ManifestResource<
+  B extends ReactView | ReactIsland = ReactView | ReactIsland,
+> = ManifestResourceV2<B>;
+
+interface IManifestV2 {
   _generatedAtUnix: number;
   _hashAlgorithm: string;
-  _version: 1;
+  _version: 2;
   views: {
-    [viewId: string]: ManifestResource<ReactView>;
+    [viewId: string]: ManifestResourceV2<ReactView>;
   };
   islands: {
-    [islandId: string]: ManifestResource<ReactIsland>;
+    [islandId: string]: ManifestResourceV2<ReactIsland>;
   };
 }
+
+export type IManifest = IManifestV2;
 
 const HASH_ALGORITHM = "sha1";
 
@@ -51,7 +56,7 @@ export default async function generateManifest({
   const manifest: IManifest = {
     _generatedAtUnix: Date.now(),
     _hashAlgorithm: HASH_ALGORITHM,
-    _version: 1,
+    _version: 2,
     islands: {},
     views: {},
   };
@@ -75,11 +80,9 @@ export default async function generateManifest({
             hash: createHash(HASH_ALGORITHM)
               .update(`${viewId}-${viewPath}-${View.toString()}`)
               .digest("hex"),
-            id: viewId,
             pathSource: "." + viewPath.replace(options.rootFolder, ""),
             res: View,
-            type: "ReactView",
-          },
+          } as ManifestResource<ReactView>,
         };
         return acc;
       },
@@ -102,27 +105,29 @@ export default async function generateManifest({
   if (_islands) {
     manifest.islands = Object.entries(_islands).reduce(
       (acc, [islandId, [islandPath, Island]]) => {
+        const pathSource = "." + islandPath.replace(options.rootFolder, "");
+
+        let pathBundle = resolve(
+          join(
+            options.rootFolder,
+            "public",
+            ".islands",
+            `${islandId}.bundle.js`,
+          ),
+        );
+        pathBundle = `.${pathBundle.replace(options.rootFolder, "")}`;
+
         acc = {
           ...acc,
           [islandId]: {
             hash: createHash(HASH_ALGORITHM)
               .update(`${islandId}-${islandPath}-${Island.toString()}`)
               .digest("hex"),
-            id: islandId,
-            pathSource: "." + islandPath.replace(options.rootFolder, ""),
-            pathBundle:
-              "." +
-              resolve(
-                join(
-                  options.rootFolder,
-                  "public",
-                  ".islands",
-                  `${islandId}.bundle.js`,
-                ),
-              ).replace(options.rootFolder, ""),
+            pathSource,
+            pathBundle,
+            pathSourceMap: `${pathBundle}.map`,
             res: Island,
-            type: "ReactIsland",
-          },
+          } as ManifestResource<ReactIsland>,
         };
         return acc;
       },

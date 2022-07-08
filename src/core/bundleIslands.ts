@@ -1,5 +1,6 @@
-// lib
+// std
 import { join, resolve } from "path";
+// lib
 import type { ReactIsland, StreamReactViewPluginOptions } from "../types";
 import { bundleCode } from "./bundleCode";
 

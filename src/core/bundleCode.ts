@@ -1,31 +1,25 @@
 // std
+import { existsSync, mkdirSync } from "fs";
 import { writeFile } from "fs/promises";
 
 // 3rd party
 import type { PluginItem as BabelPluginItem } from "@babel/core";
 import type { MinifyOutput } from "terser";
-
 import { build as buildCode } from "esbuild";
 import { minify as minifyCode } from "terser";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import { transformSync as transformCode } from "@babel/core";
 
-const babelPlugins: BabelPluginItem[] = [
-  [
-    "@babel/plugin-transform-modules-umd",
-    {
-      globals: {
-        "@ethicdevs/fastify-stream-react-views": "fastifyStreamReactViews",
-        "markdown-to-jsx": "MarkdownToJSX",
-        react: "React",
-        "react-dom": "ReactDOM",
-        "styled-components": "styled",
-      },
-    },
-  ],
-];
+export const DefaultExternalDependencies = {
+  "@ethicdevs/fastify-stream-react-views": "fastifyStreamReactViews",
+  "markdown-to-jsx": "MarkdownToJSX",
+  react: "React",
+  "react-dom": "ReactDOM",
+  "styled-components": "styled",
+};
 
 export async function bundleCode(options: {
+  externalDependencies?: Record<string, string>,
   entryFile: string;
   globalName: string;
   minify?: boolean;
@@ -34,6 +28,30 @@ export async function bundleCode(options: {
   withStyledSSR?: boolean;
   workingDirectory: string;
 }) {
+  const externalDeps = options.externalDependencies || DefaultExternalDependencies;
+  const babelPlugins: BabelPluginItem[] = [
+    [
+      "@babel/plugin-transform-modules-umd",
+      {
+        globals: externalDeps,
+      },
+    ],
+  ];
+
+  // Ensure out directory exists first.
+  try {
+    // Needs to be sync to avoid race conditions.
+    if (existsSync(options.outFolder) === false) {
+      mkdirSync(options.outFolder, { recursive: true });
+      console.log(
+        '[bundle] Created out folder at:',
+        options.outFolder,
+      );
+    }
+  } catch (err) {
+    console.error('[bundle] Could not create islands folder. Error:', (err as Error).message);
+  }
+
   if (options.withStyledSSR === true) {
     /* babelPlugins.push([
       "babel-plugin-styled-components",
@@ -62,13 +80,7 @@ export async function bundleCode(options: {
     absWorkingDir: options.workingDirectory,
     charset: "utf8",
     globalName: options.globalName,
-    external: [
-      "@ethicdevs/fastify-stream-react-views",
-      "markdown-to-jsx",
-      "react",
-      "react-dom",
-      "styled-components",
-    ],
+    external: Object.keys(externalDeps),
     jsx: "transform",
     keepNames: true,
     write: false,
