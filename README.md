@@ -9,6 +9,18 @@ component as a view/template (plain-old fashioned SSR/monolith/PHP way, without
 CSR/hydration) is becoming a full-featured framework to build SSR/Islands
 based applications without the usual pain! 🚀
 
+---
+
+## Looking for an SSR+Island ready solution?
+
+Discover [the React Monolith framework](https://github.com/EthicDevs/react-monolith)
+which is a framework we built on-top of this library so you don't have to! ⚡️
+
+Sample usage for getting started quickly can be found in the
+[the React Monolith samples repository](https://github.com/EthicDevs/react-monolith-samples)
+
+---
+
 ## Installation
 
 ```shell
