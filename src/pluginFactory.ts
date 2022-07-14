@@ -54,25 +54,30 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
     // Get App component either from user override or from default component.
     const AppComponent =
-    options != null && options.appComponent != null
-      ? options.appComponent
-      : DefaultAppComponent;
+      options != null && options.appComponent != null
+        ? options.appComponent
+        : DefaultAppComponent;
 
     // Add internal views so user can override only if needed.
-    const defaultViewsById = wrapViewsWithApp({
-      [InternalViewKind.INTERNAL_ERROR_VIEW]: [
-        InternalViewKind.INTERNAL_ERROR_VIEW, DefaultInternalErrorView as never
-      ],
-      [InternalViewKind.NOT_FOUND_ERROR_VIEW]: [
-        InternalViewKind.NOT_FOUND_ERROR_VIEW, DefaultNotFoundErrorView
-      ],
-    }, AppComponent);
+    const defaultViewsById = wrapViewsWithApp(
+      {
+        [InternalViewKind.INTERNAL_ERROR_VIEW]: [
+          InternalViewKind.INTERNAL_ERROR_VIEW,
+          DefaultInternalErrorView as never,
+        ],
+        [InternalViewKind.NOT_FOUND_ERROR_VIEW]: [
+          InternalViewKind.NOT_FOUND_ERROR_VIEW,
+          DefaultNotFoundErrorView,
+        ],
+      },
+      AppComponent,
+    );
 
     // Make sure viewsById is at the end so user overrides take effect.
     viewsById = {
       ...defaultViewsById,
       ...viewsById,
-    }
+    };
 
     // Generate and write manifest in rootFolder.
     const manifest = await generateManifest({
@@ -271,33 +276,51 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 );
 
                 const scriptsType = "module";
+
+                // TODO(config): make these paths more configurable
+                const externalDepsScriptTags: ScriptTag[] =
+                  options.externalDependencies != null
+                    ? Object.entries(options.externalDependencies).map(
+                        ([_, fileName]): ScriptTag => ({
+                          type: scriptsType,
+                          src: `/public/.cdn/${fileName}.${scriptFileByEnv}.js`,
+                        }),
+                      )
+                    : [
+                        {
+                          type: scriptsType,
+                          src: `/public/.cdn/react.${scriptFileByEnv}.js`,
+                        },
+                        {
+                          type: scriptsType,
+                          src: `/public/.cdn/react-is.${scriptFileByEnv}.js`,
+                        },
+                        {
+                          type: scriptsType,
+                          src: `/public/.cdn/react-dom.${scriptFileByEnv}.js`,
+                        },
+                        {
+                          type: scriptsType,
+                          src: `/public/.cdn/styled-components.production.min.js`,
+                        },
+                      ];
+
+                const islandsScriptTags: ScriptTag[] = Object.entries(
+                  encounteredIslandsById,
+                ).map(
+                  ([islandId]): ScriptTag => ({
+                    type: scriptsType,
+                    src: `/public/.islands/${islandId}.bundle.js`,
+                  }),
+                );
+
                 const scriptTags: ScriptTag[] = [
-                  {
-                    type: scriptsType,
-                    src: `/public/.cdn/react.${scriptFileByEnv}.js`,
-                  },
-                  {
-                    type: scriptsType,
-                    src: `/public/.cdn/react-is.${scriptFileByEnv}.js`,
-                  },
-                  {
-                    type: scriptsType,
-                    src: `/public/.cdn/react-dom.${scriptFileByEnv}.js`,
-                  },
-                  {
-                    type: scriptsType,
-                    src: `/public/.cdn/styled-components.production.min.js`,
-                  },
+                  ...externalDepsScriptTags,
                   {
                     type: scriptsType,
                     src: `/public/islands-runtime.js`,
                   },
-                  ...Object.entries(encounteredIslandsById).map(
-                    ([islandId]) => ({
-                      type: scriptsType,
-                      src: `/public/.islands/${islandId}.bundle.js`,
-                    }),
-                  ),
+                  ...islandsScriptTags,
                   {
                     type: scriptsType,
                     textContent: pageScript,
