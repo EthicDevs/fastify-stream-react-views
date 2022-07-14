@@ -127,13 +127,6 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               }
               props.title = error.name;
               props.error = error;
-              // await endStreamWithHtmlError(
-              //   endpointStream,
-              //   error,
-              //   options.rootFolder,
-              // );
-              // logRequestEnd(reqStartAtUnix, this.request, view, error);
-              // return resolve(this.send(endpointStream));
             }
 
             // Get the page title (for use in <title> tag)
@@ -281,7 +274,8 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 const externalDepsScriptTags: ScriptTag[] =
                   options.externalDependencies != null
                     ? Object.entries(options.externalDependencies).map(
-                        ([_, fileName]): ScriptTag => ({
+                        ([fileName, moduleName]): ScriptTag => ({
+                          id: moduleName,
                           type: scriptsType,
                           src: `/public/.cdn/${fileName}.${scriptFileByEnv}.js`,
                         }),

@@ -124,11 +124,13 @@ export type HeadTag = HeadTagMeta | HeadTagMetaCharset | HeadTagLink;
 
 export type ScriptTag =
   | {
+      id?: string;
       type: string;
       src: string;
       textContent?: undefined;
     }
   | {
+      id?: string;
       type: string;
       src?: undefined;
       textContent: string;
