@@ -11,7 +11,6 @@ import { nodeExternalsPlugin } from "esbuild-node-externals";
 import { transformSync as transformCode } from "@babel/core";
 
 export const DefaultExternalDependencies = {
-  "@ethicdevs/fastify-stream-react-views": "fastifyStreamReactViews",
   "markdown-to-jsx": "MarkdownToJSX",
   react: "React",
   "react-dom": "ReactDOM",
@@ -19,7 +18,7 @@ export const DefaultExternalDependencies = {
 };
 
 export async function bundleCode(options: {
-  externalDependencies?: Record<string, string>,
+  externalDependencies?: Record<string, string>;
   entryFile: string;
   globalName: string;
   minify?: boolean;
@@ -28,7 +27,8 @@ export async function bundleCode(options: {
   withStyledSSR?: boolean;
   workingDirectory: string;
 }) {
-  const externalDeps = options.externalDependencies || DefaultExternalDependencies;
+  const externalDeps =
+    options.externalDependencies || DefaultExternalDependencies;
   const babelPlugins: BabelPluginItem[] = [
     [
       "@babel/plugin-transform-modules-umd",
@@ -43,13 +43,13 @@ export async function bundleCode(options: {
     // Needs to be sync to avoid race conditions.
     if (existsSync(options.outFolder) === false) {
       mkdirSync(options.outFolder, { recursive: true });
-      console.log(
-        '[bundle] Created out folder at:',
-        options.outFolder,
-      );
+      console.log("[bundle] Created out folder at:", options.outFolder);
     }
   } catch (err) {
-    console.error('[bundle] Could not create islands folder. Error:', (err as Error).message);
+    console.error(
+      "[bundle] Could not create islands folder. Error:",
+      (err as Error).message,
+    );
   }
 
   if (options.withStyledSSR === true) {
