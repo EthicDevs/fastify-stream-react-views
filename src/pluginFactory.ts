@@ -23,6 +23,7 @@ import {
   HTML_DOCTYPE,
   HTML_MIME_TYPE,
   NODE_ENV_STRICT,
+  DefaultExternalDependencies,
 } from "./constants";
 
 import { InternalViewKind } from "./enums/InternalViewKind";
@@ -259,6 +260,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   islandsPropsById,
                 });
 
+                // TODO(config): expose this to the config
                 const scriptFileByEnv =
                   NODE_ENV_STRICT === "production"
                     ? `production.min`
@@ -270,35 +272,23 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
                 const scriptsType = "module";
 
-                // TODO(config): make these paths more configurable
-                const externalDepsScriptTags: ScriptTag[] =
-                  options.externalDependencies != null
-                    ? Object.entries(options.externalDependencies).map(
-                        ([fileName, moduleName]): ScriptTag => ({
-                          id: moduleName,
-                          type: scriptsType,
-                          src: `/public/.cdn/${fileName}.${scriptFileByEnv}.js`,
-                        }),
-                      )
-                    : [
-                        {
-                          type: scriptsType,
-                          src: `/public/.cdn/react.${scriptFileByEnv}.js`,
-                        },
-                        {
-                          type: scriptsType,
-                          src: `/public/.cdn/react-is.${scriptFileByEnv}.js`,
-                        },
-                        {
-                          type: scriptsType,
-                          src: `/public/.cdn/react-dom.${scriptFileByEnv}.js`,
-                        },
-                        {
-                          type: scriptsType,
-                          src: `/public/.cdn/styled-components.production.min.js`,
-                        },
-                      ];
+                const externalDeps = {
+                  ...DefaultExternalDependencies,
+                  ...(options?.externalDependencies || {}),
+                };
 
+                // TODO(config): make this configurable
+                const externalDepsScriptTags: ScriptTag[] = Object.entries(
+                  externalDeps,
+                ).map(
+                  ([fileName, moduleName]): ScriptTag => ({
+                    id: moduleName,
+                    type: scriptsType,
+                    src: `/public/.cdn/${fileName}.${scriptFileByEnv}.js`,
+                  }),
+                );
+
+                // TODO(config): make this configurable
                 const islandsScriptTags: ScriptTag[] = Object.entries(
                   encounteredIslandsById,
                 ).map(
@@ -310,6 +300,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
                 const scriptTags: ScriptTag[] = [
                   ...externalDepsScriptTags,
+                  // TODO(config): make this configurable
                   {
                     type: scriptsType,
                     src: `/public/islands-runtime.js`,

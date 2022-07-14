@@ -10,12 +10,8 @@ import { minify as minifyCode } from "terser";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import { transformSync as transformCode } from "@babel/core";
 
-export const DefaultExternalDependencies = {
-  "markdown-to-jsx": "MarkdownToJSX",
-  react: "React",
-  "react-dom": "ReactDOM",
-  "styled-components": "styled",
-};
+// lib
+import { DefaultExternalDependencies } from "../constants";
 
 export async function bundleCode(options: {
   externalDependencies?: Record<string, string>;
@@ -27,8 +23,11 @@ export async function bundleCode(options: {
   withStyledSSR?: boolean;
   workingDirectory: string;
 }) {
-  const externalDeps =
-    options.externalDependencies || DefaultExternalDependencies;
+  const externalDeps = {
+    ...DefaultExternalDependencies,
+    ...options.externalDependencies,
+  };
+
   const babelPlugins: BabelPluginItem[] = [
     [
       "@babel/plugin-transform-modules-umd",
