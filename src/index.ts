@@ -25,6 +25,12 @@ export {
 /* Enums */
 export { InternalViewKind } from "./enums/InternalViewKind";
 
+/* Components */
+export {
+  DefaultInternalErrorView,
+  DefaultNotFoundErrorView,
+} from "./components";
+
 /* Core functions */
 export {
   bundleCode,
