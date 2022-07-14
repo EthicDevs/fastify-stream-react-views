@@ -23,10 +23,17 @@ export async function bundleCode(options: {
   withStyledSSR?: boolean;
   workingDirectory: string;
 }) {
-  const externalDeps = {
+  let externalDeps = {
     ...DefaultExternalDependencies,
     ...options.externalDependencies,
-  };
+  } as Record<string, string>;
+
+  if (options.withStyledSSR === true) {
+    externalDeps = {
+      ...externalDeps,
+      ["styled-components"]: "styled",
+    };
+  }
 
   const babelPlugins: BabelPluginItem[] = [
     [

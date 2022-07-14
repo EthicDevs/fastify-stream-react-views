@@ -272,10 +272,17 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
                 const scriptsType = "module";
 
-                const externalDeps = {
+                let externalDeps = {
                   ...DefaultExternalDependencies,
                   ...(options?.externalDependencies || {}),
-                };
+                } as Record<string, string>;
+
+                if (options.withStyledSSR === true) {
+                  externalDeps = {
+                    ...externalDeps,
+                    ["styled-components"]: "styled",
+                  };
+                }
 
                 // TODO(config): make this configurable
                 const externalDepsScriptTags: ScriptTag[] = Object.entries(
