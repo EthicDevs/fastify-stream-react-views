@@ -1,5 +1,6 @@
 .env
 .env.example
+.nova/
 .prettierrc
 .volumes/
 **/*.test.ts
