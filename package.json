@@ -1,15 +1,14 @@
 {
   "name": "@ethicdevs/fastify-stream-react-views",
-  "version": "0.9.2",
-  "description": "A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, no CSR/hydration yet?) ",
+  "version": "0.9.3",
+  "description": "A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, CSI/Islands)",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "author": {
     "name": "William Nemencha",
-    "email": "william@ethicdevs.com",
-    "url": "https://ethicdevs.com/devlog/wnemencha"
+    "email": "william@ethicdevs.com"
   },
   "repository": {
     "type": "git",
@@ -23,7 +22,13 @@
     "stream",
     "view",
     "template",
-    "react-monolith"
+    "react-monolith",
+    "ssr",
+    "csi",
+    "islands",
+    "server-side-rendering",
+    "client-side-interaction",
+    "islands-pattern"
   ],
   "publishConfig": {
     "access": "public"
