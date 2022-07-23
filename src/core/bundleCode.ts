@@ -36,8 +36,8 @@ export async function bundleCode(options: {
   }
 
   const babelPlugins: BabelPluginItem[] = [
+    "@babel/plugin-transform-react-display-name",
     [
-      "@babel/plugin-transform-react-display-name",
       "@babel/plugin-transform-modules-umd",
       {
         globals: externalDeps,
