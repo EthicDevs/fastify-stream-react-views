@@ -36,7 +36,7 @@ export async function bundleCode(options: {
   }
 
   const babelPlugins: BabelPluginItem[] = [
-    "@babel/plugin-transform-react-display-name",
+    ["@babel/plugin-transform-react-display-name"],
     [
       "@babel/plugin-transform-modules-umd",
       {
@@ -63,12 +63,15 @@ export async function bundleCode(options: {
     babelPlugins.push([
       "babel-plugin-styled-components",
       {
+        displayName: true,
+        fileName: false,
+        meaninglessFileNames: ["index", "styles"],
         minify: true,
         namespace: options.globalName,
         pure: true,
         // else its gonna generate comments/newlines for rehydration, which we don't use
         ssr: false,
-        transpileTemplateLiterals: true,
+        transpileTemplateLiterals: false,
       },
     ]);
   }
