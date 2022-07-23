@@ -37,6 +37,7 @@ export async function bundleCode(options: {
 
   const babelPlugins: BabelPluginItem[] = [
     [
+      "@babel/plugin-transform-react-display-name",
       "@babel/plugin-transform-modules-umd",
       {
         globals: externalDeps,
@@ -59,17 +60,17 @@ export async function bundleCode(options: {
   }
 
   if (options.withStyledSSR === true) {
-    /* babelPlugins.push([
+    babelPlugins.push([
       "babel-plugin-styled-components",
       {
         minify: true,
-        namespace: options.appName,
+        namespace: options.globalName,
         pure: true,
         // else its gonna generate comments/newlines for rehydration, which we don't use
         ssr: false,
         transpileTemplateLiterals: true,
       },
-    ]); */
+    ]);
   }
 
   const buildResults = await buildCode({

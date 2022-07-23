@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@babel/plugin-transform-modules-umd": "^7.18.0",
+    "@babel/plugin-transform-react-display-name": "^7.18.6",
     "babel-plugin-styled-components": "^2.0.7",
     "dree": "^3.3.7",
     "esbuild": "^0.14.46",
