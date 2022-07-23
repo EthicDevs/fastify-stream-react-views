@@ -15,7 +15,11 @@ export function wrapIslandsWithComponent<
     islandId: string,
     Island: ReactIsland<T>,
   ): ReactIsland<T> => {
-    if (Island.islandId != null) return Island;
+    // case when Island.islandId is already set (thus already wrapped)
+    if (Island != null && "islandId" in Island && Island.islandId != null) {
+      return Island;
+    }
+    // case when not yet wrapped with component
     let islandIdx = -1;
     const wrappedView = (hocProps: T) => {
       islandIdx += 1;
@@ -29,7 +33,9 @@ export function wrapIslandsWithComponent<
     };
     wrappedView.$type = "ReactIsland" as const;
     wrappedView.displayName = `${
-      Island != null ? Island.displayName : undefined || islandId
+      Island != null && "displayName" in Island
+        ? Island.displayName
+        : undefined || islandId
     }`;
     wrappedView.island = Island;
     wrappedView.islandId = wrappedView.displayName;
@@ -39,7 +45,9 @@ export function wrapIslandsWithComponent<
   const wrappedViews = entries.reduce(
     (acc, [islandId, [islandPath, Island]]) => {
       islandId = `${
-        Island != null ? Island.displayName : undefined || islandId
+        Island != null && "displayName" in Island
+          ? Island.displayName
+          : undefined || islandId
       }`;
       acc = {
         ...acc,

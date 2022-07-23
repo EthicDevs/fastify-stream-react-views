@@ -13,8 +13,14 @@ export function wrapComponent<P = {}, C extends VFC<P> = VFC<P>>(
       );
     };
     wrappedEl.displayName = `With${
-      WrapperEl != null ? WrapperEl.name : "UnnamedWrapper"
-    }(${ComponentEl != null ? ComponentEl.name : "UnknownComponent"})`;
+      WrapperEl != null && "name" in WrapperEl
+        ? WrapperEl.name
+        : undefined || "UnnamedWrapper"
+    }(${
+      ComponentEl != null && "name" in ComponentEl
+        ? ComponentEl.name
+        : undefined || "UnknownComponent"
+    })`;
     return wrappedEl as C;
   };
   return _wrapComponent(Component, Wrapper);
