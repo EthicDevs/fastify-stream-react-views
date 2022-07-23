@@ -28,7 +28,9 @@ export function wrapIslandsWithComponent<
       );
     };
     wrappedView.$type = "ReactIsland" as const;
-    wrappedView.displayName = `${Island.displayName || Island.name}`;
+    wrappedView.displayName = `${
+      Island != null ? Island.displayName : undefined || islandId
+    }`;
     wrappedView.island = Island;
     wrappedView.islandId = wrappedView.displayName;
     return wrappedView;
@@ -36,7 +38,9 @@ export function wrapIslandsWithComponent<
 
   const wrappedViews = entries.reduce(
     (acc, [islandId, [islandPath, Island]]) => {
-      islandId = `${Island.displayName || Island.name}`;
+      islandId = `${
+        Island != null ? Island.displayName : undefined || islandId
+      }`;
       acc = {
         ...acc,
         [islandId]: [islandPath, wrapWithComponent(islandId, Island)],

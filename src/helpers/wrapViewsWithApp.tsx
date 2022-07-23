@@ -24,7 +24,9 @@ export function wrapViewsWithApp<
       );
     };
     wrappedView.$type = "ReactView" as const;
-    wrappedView.displayName = `WithApp(${ViewEl.displayName || viewName})`;
+    wrappedView.displayName = `WithApp(${
+      ViewEl != null ? ViewEl.displayName : undefined || viewName
+    })`;
     wrappedView.viewId = viewName;
     wrappedView.view = ViewEl;
     return wrappedView;
