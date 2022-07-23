@@ -60,7 +60,7 @@ export async function bundleCode(options: {
   }
 
   if (options.withStyledSSR === true) {
-    babelPlugins.push([
+    /*babelPlugins.push([
       "babel-plugin-styled-components",
       {
         displayName: true,
@@ -73,7 +73,7 @@ export async function bundleCode(options: {
         ssr: false,
         transpileTemplateLiterals: false,
       },
-    ]);
+    ]);*/
   }
 
   const buildResults = await buildCode({
