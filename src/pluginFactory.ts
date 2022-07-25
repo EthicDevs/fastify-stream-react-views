@@ -46,6 +46,7 @@ import DefaultInternalErrorView from "./components/DefaultInternalErrorView";
 import DefaultNotFoundErrorView from "./components/DefaultNotFoundErrorView";
 import { DefaultAppComponent } from "./components/DefaultAppComponent";
 import { removeCommentsAndSpacing } from "./helpers/removeCommentsAndSpacing";
+import { reduceDuplicates } from "./helpers/reduceDuplicates";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -146,15 +147,18 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               ...(viewCtx?.html || {}),
             };
 
-            const headTags = [
-              ...(options?.viewContext?.head || []),
-              ...(viewCtx?.head || []),
-            ];
+            const headTags = reduceDuplicates(
+              [...(options?.viewContext?.head || []), ...(viewCtx?.head || [])],
+              (a, b) => JSON.stringify(a) === JSON.stringify(b),
+            );
 
-            const baseScriptTags = [
-              ...(options?.viewContext?.scripts || []),
-              ...(viewCtx?.scripts || []),
-            ];
+            const baseScriptTags = reduceDuplicates(
+              [
+                ...(options?.viewContext?.scripts || []),
+                ...(viewCtx?.scripts || []),
+              ],
+              (a, b) => JSON.stringify(a) === JSON.stringify(b),
+            );
 
             const htmlTagsStr = getHtmlTagsStr(htmlTags);
             const headTagsStr = getHeadTagsStr(headTags);
@@ -312,20 +316,23 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   }),
                 );
 
-                const scriptTags: ScriptTag[] = [
-                  ...externalDepsScriptTags,
-                  // TODO(config): make this configurable
-                  {
-                    type: scriptsType,
-                    src: `/public/islands-runtime.js`,
-                  },
-                  ...baseScriptTags,
-                  ...islandsScriptTags,
-                  {
-                    type: scriptsType,
-                    textContent: pageScript,
-                  },
-                ];
+                const scriptTags: ScriptTag[] = reduceDuplicates(
+                  [
+                    ...externalDepsScriptTags,
+                    // TODO(config): make this configurable
+                    {
+                      type: scriptsType,
+                      src: `/public/islands-runtime.js`,
+                    },
+                    ...baseScriptTags,
+                    ...islandsScriptTags,
+                    {
+                      type: scriptsType,
+                      textContent: pageScript,
+                    },
+                  ],
+                  (a, b) => JSON.stringify(a) === JSON.stringify(b),
+                );
 
                 const scriptTagsStr = getScriptTagsStr(scriptTags);
 
