@@ -9,6 +9,7 @@ export type ViewContext = {
     lang?: string;
     dir?: string;
   };
+  scripts?: ScriptTag[];
 };
 
 export interface CommonPropsBase {

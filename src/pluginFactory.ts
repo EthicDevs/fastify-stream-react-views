@@ -27,7 +27,7 @@ import {
 } from "./constants";
 
 import { InternalViewKind } from "./enums/InternalViewKind";
-import { collectResources, generateManifest } from "./core";
+import { collectResources, generateManifest, makePageScript } from "./core";
 import {
   buildViewWithProps,
   endStreamWithHtmlError,
@@ -37,7 +37,6 @@ import {
   isStyledComponentsAvailable,
   logRequestEnd,
   logRequestStart,
-  makePageScript,
   renderViewToStaticStream,
   renderViewToStream,
   wrapViewsWithApp,
@@ -46,6 +45,7 @@ import {
 import DefaultInternalErrorView from "./components/DefaultInternalErrorView";
 import DefaultNotFoundErrorView from "./components/DefaultNotFoundErrorView";
 import { DefaultAppComponent } from "./components/DefaultAppComponent";
+import { removeCommentsAndSpacing } from "./helpers/removeCommentsAndSpacing";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
@@ -151,12 +151,19 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               ...(viewCtx?.head || []),
             ];
 
+            const baseScriptTags = [
+              ...(options?.viewContext?.scripts || []),
+              ...(viewCtx?.scripts || []),
+            ];
+
             const htmlTagsStr = getHtmlTagsStr(htmlTags);
             const headTagsStr = getHeadTagsStr(headTags);
 
             // Write HTML/Head tags
             endpointStream.write(
-              `<html ${htmlTagsStr}><head><title>${titleStr}</title>${headTagsStr}</head><body>`,
+              `<html ${htmlTagsStr}><head><title>${titleStr}</title>${removeCommentsAndSpacing(
+                headTagsStr,
+              )}</head><body>`,
             );
 
             // Prepare view context (to pass data around)
@@ -312,6 +319,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                     type: scriptsType,
                     src: `/public/islands-runtime.js`,
                   },
+                  ...baseScriptTags,
                   ...islandsScriptTags,
                   {
                     type: scriptsType,
@@ -324,7 +332,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 // Only send if page has islands we've been able to find
                 if (isPageContainingIslands) {
                   endpointStream.end(
-                    `${scriptTagsStr}</body></html>`.replace(/[\n\r]+/g, ""),
+                    removeCommentsAndSpacing(`${scriptTagsStr}</body></html>`),
                   );
                 } else {
                   // Important, close the body & html tags.

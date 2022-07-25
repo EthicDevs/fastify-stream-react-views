@@ -1,8 +1,8 @@
 // lib
 import type { ReactIsland } from "../types";
-import { removeCommentsAndSpacing } from "./removeCommentsAndSpacing";
+import { removeCommentsAndSpacing } from "../helpers";
 
-export async function makePageScript(
+export default async function makePageScript(
   viewId: string,
   {
     encounteredIslandsById,
@@ -15,11 +15,16 @@ export async function makePageScript(
   const encounteredIslandsEntries = Object.entries(encounteredIslandsById);
   const islandsPropsEntries = Object.entries(islandsPropsById);
 
+  const isProd = process.env.NODE_ENV === "production";
   const script: string = `
 (function main(_fastifyStreamReactViews) {
-  const s = new Date().getTime();
+  const e = "${process.env.NODE_ENV || "production"}";
   const v = "${viewId}";
 
+  ${
+    isProd === false
+      ? `
+  const s = new Date().getTime();
   function log(message, args = undefined, tag = "islands", now = Date.now()) {
     const logMsg = \`[\${now}][\${tag}] \${message}\`;
     if (args) {
@@ -30,6 +35,9 @@ export async function makePageScript(
   }
 
   log(\`Reviving Islands for view "\${v}"...\`);
+  `
+      : ""
+  }
 
   var islands = {
   ${encounteredIslandsEntries
@@ -43,11 +51,20 @@ export async function makePageScript(
     .join(",\n")},
   };
 
+  ${
+    isProd === false
+      ? `
   log('islands:', islands);
   log('islandsEls:', islandsEls);
   log('islandsProps:', islandsProps);
+  `
+      : ""
+  }
 
   function afterRevival(revivalResults) {
+    ${
+      isProd === false
+        ? `
     if (revivalResults != null && Array.isArray(revivalResults)) {
       log("Revived Islands:", revivalResults);
     } else {
@@ -56,6 +73,10 @@ export async function makePageScript(
     const e = new Date().getTime();
     const duration = e - s;
     log(\`Done in \${duration}ms\`);
+    return undefined;
+    `
+        : "return undefined;" // TODO: Allow to pass some error reporting script here from config
+    }
   }
 
   _fastifyStreamReactViews.reviveIslands(islands, islandsProps, islandsEls)

@@ -16,6 +16,7 @@ export {
   HeadTagMetaCharset,
   ReactView,
   ReactIsland,
+  ScriptTag,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
   ViewContext,
@@ -35,9 +36,11 @@ export {
 export {
   bundleCode,
   bundleIslands,
+  bundleRuntime,
   collectResources,
   generateManifest,
   makeIsland,
+  makePageScript,
 } from "./core";
 
 /* Helpers functions */
@@ -47,6 +50,7 @@ export {
   isStyledComponentsAvailable,
   walkFolderForFiles,
   wrapComponent,
+  removeCommentsAndSpacing,
 } from "./helpers";
 
 /* Register function */
