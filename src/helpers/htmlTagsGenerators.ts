@@ -105,14 +105,14 @@ export function getScriptTagsStr(scriptTags: ScriptTag[]) {
       if (src != null) {
         stringBuilder.push(
           `<script${
-            attrs.length > 0 ? `${attrs.join(" ")} ` : ""
-          } type=${type} src=${src}></script>`,
+            attrs.length > 0 ? ` ${attrs.join(" ")} ` : " "
+          }type=${type} src=${src}></script>`,
         );
       } else {
         stringBuilder.push(
           `<script${
-            attrs.length > 0 ? `${attrs.join(" ")} ` : ""
-          } type=${type}>${textContent}</script>`,
+            attrs.length > 0 ? ` ${attrs.join(" ")} ` : " "
+          }type=${type}>${textContent}</script>`,
         );
       }
     },
