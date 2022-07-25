@@ -2,6 +2,34 @@ import { FastifyReply } from "fastify";
 import type { IncomingHttpHeaders } from "node:http";
 import { VFC } from "react";
 
+export type HtmlRelAttribute =
+  | "alternate"
+  | "author"
+  | "bookmark"
+  | "canonical"
+  | "dns-prefetch"
+  | "external"
+  | "help"
+  | "icon"
+  | "license"
+  | "manifest"
+  | "me"
+  | "modulepreload"
+  | "next"
+  | "nofollow"
+  | "noopener"
+  | "noreferrer"
+  | "opener"
+  | "pingback"
+  | "preconnect"
+  | "prefetch"
+  | "preload"
+  | "prerender"
+  | "prev"
+  | "search"
+  | "stylesheet"
+  | "tag";
+
 export type ViewContext = {
   [x: string]: unknown;
   head?: HeadTag[];
@@ -114,7 +142,9 @@ export type HeadTagMetaCharset = {
 
 export type HeadTagLink = {
   kind: "link";
-  rel: string;
+  as?: string;
+  crossorigin?: boolean;
+  rel: HtmlRelAttribute;
   href: string;
   hreflang?: string;
   title?: string;
@@ -126,12 +156,16 @@ export type HeadTag = HeadTagMeta | HeadTagMetaCharset | HeadTagLink;
 export type ScriptTag =
   | {
       id?: string;
+      async?: boolean;
+      defer?: boolean;
       type: string;
       src: string;
       textContent?: undefined;
     }
   | {
       id?: string;
+      async?: boolean;
+      defer?: boolean;
       type: string;
       src?: undefined;
       textContent: string;

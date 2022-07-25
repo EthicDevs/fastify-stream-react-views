@@ -32,13 +32,20 @@ function isLinkTag(tag: HeadTag): tag is HeadTagLink {
 }
 
 function getLinkTagStr({
+  as: asStr,
+  crossorigin,
   href,
   hreflang,
   rel,
   title,
   type,
 }: HeadTagLink): string {
-  const attrs = [`href="${href}"`, `rel="${rel}"`];
+  const attrs = [
+    `href="${href}"`,
+    `rel="${rel}"`,
+    asStr && `as="${asStr}"`,
+    crossorigin && `crossorigin`,
+  ].filter((x): x is string => x != null);
   if (hreflang != null) {
     attrs.push(`hreflang="${hreflang}"`);
   }
@@ -90,13 +97,26 @@ export function getHtmlTagsStr({
 export function getScriptTagsStr(scriptTags: ScriptTag[]) {
   const stringBuilder = [] as string[];
 
-  scriptTags.map(({ src, textContent, type }) => {
-    if (src != null) {
-      stringBuilder.push(`<script type=${type} src=${src}></script>`);
-    } else {
-      stringBuilder.push(`<script type=${type}>${textContent}</script>`);
-    }
-  });
+  scriptTags.map(
+    ({ src, textContent, type, async: asyncAttr, defer: deferAttr }) => {
+      const attrs = [asyncAttr && `async`, deferAttr && `defer`].filter(
+        (x): x is string => x != null,
+      );
+      if (src != null) {
+        stringBuilder.push(
+          `<script${
+            attrs.length > 0 ? `${attrs.join(" ")} ` : ""
+          } type=${type} src=${src}></script>`,
+        );
+      } else {
+        stringBuilder.push(
+          `<script${
+            attrs.length > 0 ? `${attrs.join(" ")} ` : ""
+          } type=${type}>${textContent}</script>`,
+        );
+      }
+    },
+  );
 
   return stringBuilder.join("\n");
 }
