@@ -7,7 +7,8 @@ export async function walkFolderForFiles<R = FC<unknown>>(
   try {
     const tree = await walkFolder(path, {
       depth: 5,
-      extensions: process.env.NODE_ENV === "production" ? ["js"] : ["jsx", "tsx"],
+      extensions:
+        process.env.NODE_ENV === "production" ? ["js"] : ["tsx", "jsx", "js"],
       normalize: true,
       followLinks: true,
       size: true,

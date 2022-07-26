@@ -295,6 +295,10 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   };
                 }
 
+                const assetImportPrefix =
+                  options?.assetImportPrefix || `/public`;
+                const assetDepsFolder = options?.assetDepsFolder || ".cdn";
+
                 // TODO(config): make this configurable
                 const externalDepsScriptTags: ScriptTag[] = Object.entries(
                   externalDeps,
@@ -302,27 +306,25 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   ([fileName, moduleName]): ScriptTag => ({
                     id: moduleName,
                     type: scriptsType,
-                    src: `/public/.cdn/${fileName}.${scriptFileByEnv}.js`,
+                    src: `${assetImportPrefix}/${assetDepsFolder}/${fileName}.${scriptFileByEnv}.js`,
                   }),
                 );
 
-                // TODO(config): make this configurable
                 const islandsScriptTags: ScriptTag[] = Object.entries(
                   encounteredIslandsById,
                 ).map(
                   ([islandId]): ScriptTag => ({
                     type: scriptsType,
-                    src: `/public/.islands/${islandId}.bundle.js`,
+                    src: `${assetImportPrefix}/.islands/${islandId}.bundle.js`,
                   }),
                 );
 
                 const scriptTags: ScriptTag[] = reduceDuplicates(
                   [
                     ...externalDepsScriptTags,
-                    // TODO(config): make this configurable
                     {
                       type: scriptsType,
-                      src: `/public/islands-runtime.js`,
+                      src: `${assetImportPrefix}/islands-runtime.js`,
                     },
                     ...baseScriptTags,
                     ...islandsScriptTags,

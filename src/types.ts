@@ -82,13 +82,42 @@ export interface StreamReactViewPluginOptions<
    **/
   externalDependencies?: Record<string, string>;
   /**
+   * Prefix that is used to import the islands bundles/runtime into the page
+   * when it is rendered from the server side. This allows for those static
+   * assets to be distributed on a CDN easily. Same as `assetPrefix` in NEXT.JS.
+   *
+   * @note Must start with either: `.`, `/` or `https://`.
+   * @note Must not include trailing (end) slash.
+   * @default "/public"
+   * @example
+   *   - "/public"
+   *   - "https://cdn.my-provider.com/my-space"
+   */
+  assetImportPrefix?: string;
+  /**
+   * Folder name of external dependencies stored in the `assetsOutFolder`.
+   * @default ".cdn"
+   * @example ".deps"
+   */
+  assetDepsFolder?: string;
+  /**
+   * Path to a public folder (usually served with fastify-static, or through a
+   * reverse proxy) where to generate and save the built assets (Islands bundles,
+   * Islands Runtime, External Deps, etc).
+   *
+   * @example
+   *   // paths.ROOT_FOLDER -> folder that contains package.json
+   *   path.resolve(path.join(paths.ROOT_FOLDER, 'public'))
+   */
+  assetsOutFolder: string;
+  /**
    * Path to React components to render as islands (w/ ext. jsx or tsx).
    *
    * Islands are regular components that get "revived" on the client once SSR
    * has been received by the client. It allows for self-contained area of
    * interactivity within a server-side rendered view, on the client side.
    *
-   * @example path.resolve(path.join(__dirname, './islands'))
+   * @example path.resolve(path.join(__dirname, 'islands'))
    */
   islandsFolder: string;
   /**

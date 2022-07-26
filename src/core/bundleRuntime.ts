@@ -15,7 +15,7 @@ export default async function bundleRuntime(
       globalName: "fastifyStreamReactViews",
       minify: process.env.NODE_ENV === "production",
       entryFile: resolve(join(__dirname, "../../src/runtime/index.ts")),
-      outFolder: resolve(join(options.rootFolder, "public")),
+      outFolder: options.assetsOutFolder,
       outFileName: `islands-runtime`,
       withStyledSSR: options.withStyledSSR,
       workingDirectory: options.rootFolder,

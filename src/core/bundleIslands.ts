@@ -18,10 +18,11 @@ export default async function bundleIslands(
             externalDependencies: options?.externalDependencies,
             globalName: islandId,
             minify: process.env.NODE_ENV === "production",
-            entryFile: process.env.NODE_ENV === "production"
-              ? resolve(join(options.islandsFolder, `${islandId}.js`))
-              : resolve(join(options.islandsFolder, `${islandId}.tsx`)),
-            outFolder: resolve(join(options.rootFolder, "public", ".islands")),
+            entryFile:
+              process.env.NODE_ENV === "production"
+                ? resolve(join(options.islandsFolder, `${islandId}.js`))
+                : resolve(join(options.islandsFolder, `${islandId}.tsx`)),
+            outFolder: resolve(join(options.assetsOutFolder, ".islands")),
             outFileName: `${islandId}.bundle`,
             withStyledSSR: options.withStyledSSR,
             workingDirectory: options.rootFolder,
