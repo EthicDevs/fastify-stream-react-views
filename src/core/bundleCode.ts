@@ -76,6 +76,7 @@ export async function bundleCode(options: {
     ]);*/
   }
 
+  const currEnv = process.env.NODE_ENV || "production";
   const buildResults = await buildCode({
     entryPoints: {
       [options.outFileName]: options.entryFile,
@@ -97,6 +98,10 @@ export async function bundleCode(options: {
     sourcemap: false,
     format: "esm",
     plugins: [nodeExternalsPlugin()],
+    define: {
+      "process.env.NODE_ENV": `"${currEnv}"`,
+      __DEV__: currEnv === "production" ? `false` : `true`,
+    },
   });
 
   const outputsEntries = Object.entries(buildResults.outputFiles!);
