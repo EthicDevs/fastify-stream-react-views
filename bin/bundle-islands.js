@@ -6,7 +6,7 @@ const { writeFile } = require("fs/promises");
 
 const { generateManifest } = require("../dist");
 
-async function main() {
+async function bundleIslands() {
   if (process.env.NODE_ENV !== "production") {
     throw new Error(
       `Please call this script only when NODE_ENV=production is set.`,
@@ -38,4 +38,4 @@ async function main() {
   console.log("Built manifest:", nextManifestText);
 }
 
-main();
+bundleIslands();
