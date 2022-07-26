@@ -1,5 +1,4 @@
-#!/usr/bin/env node --experimental-import-meta-resolve
-
+#!/usr/bin/env node
 const { cwd } = require("process");
 const { join, resolve } = require("path");
 const { writeFile } = require("fs/promises");
