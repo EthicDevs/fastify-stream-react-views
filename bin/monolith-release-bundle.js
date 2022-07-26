@@ -1,4 +1,5 @@
-#!/bin/env node
+#!/usr/bin/env node
+
 import { cwd } from "process";
 import { join, resolve } from "path";
 
