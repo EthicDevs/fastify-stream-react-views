@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { cwd } from "process";
-import { join, resolve } from "path";
+const { cwd } = require("process");
+const { join, resolve } = require("path");
 
-import generateManifest from "../dist/core/generateManifest";
+const generateManifest = require("../dist/core/generateManifest");
 
 async function main() {
   const rootFolder = cwd();
