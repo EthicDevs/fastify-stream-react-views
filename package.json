@@ -1,6 +1,6 @@
 {
   "name": "@ethicdevs/fastify-stream-react-views",
-  "version": "1.1.2",
+  "version": "1.2.2",
   "description": "A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, CSI/Islands)",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -32,6 +32,9 @@
   ],
   "publishConfig": {
     "access": "public"
+  },
+  "bin": {
+    "monolith:bundle": "./bin/monolith-release-bundle.js"
   },
   "scripts": {
     "test": "jest --verbose",

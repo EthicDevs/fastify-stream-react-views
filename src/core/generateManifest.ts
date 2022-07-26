@@ -13,6 +13,7 @@ import type {
 import { default as bundleIslands } from "./bundleIslands";
 import { default as bundleRuntime } from "./bundleRuntime";
 import { walkFolderForFiles } from "../helpers";
+import { readFileSync } from "fs";
 
 type ManifestResourceV2<
   B extends ReactView | ReactIsland = ReactView | ReactIsland,
@@ -61,6 +62,7 @@ export default async function generateManifest({
     views: {},
   };
 
+  // { [viewName]: [viewPath, View] }
   let _views: Record<string, [string, ReactView]> | null = null;
   if (views) {
     _views = views;
@@ -74,11 +76,12 @@ export default async function generateManifest({
   if (_views != null) {
     manifest.views = Object.entries(_views).reduce(
       (acc, [viewId, [viewPath, View]]) => {
+        const viewContents = readFileSync(viewPath, { encoding: "utf-8" });
         acc = {
           ...acc,
           [viewId]: {
             hash: createHash(HASH_ALGORITHM)
-              .update(`${viewId}-${viewPath}-${View.toString()}`)
+              .update(`${viewId}-${viewPath}-${viewContents}`)
               .digest("hex"),
             pathSource: "." + viewPath.replace(options.rootFolder, ""),
             res: View,
@@ -106,6 +109,7 @@ export default async function generateManifest({
     manifest.islands = Object.entries(_islands).reduce(
       (acc, [islandId, [islandPath, Island]]) => {
         const pathSource = "." + islandPath.replace(options.rootFolder, "");
+        const islandContents = readFileSync(islandPath, { encoding: "utf-8" });
 
         let pathBundle = resolve(
           join(
@@ -121,7 +125,7 @@ export default async function generateManifest({
           ...acc,
           [islandId]: {
             hash: createHash(HASH_ALGORITHM)
-              .update(`${islandId}-${islandPath}-${Island.toString()}`)
+              .update(`${islandId}-${islandPath}-${islandContents}`)
               .digest("hex"),
             pathSource,
             pathBundle,
@@ -133,6 +137,7 @@ export default async function generateManifest({
       },
       {},
     );
+
     await bundleIslands(_islands, options);
   }
 
