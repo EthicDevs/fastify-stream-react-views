@@ -229,3 +229,32 @@ export interface WrapperProps {
   islandId: string;
   childrenAsFn: (props: { "data-islandid": string }) => JSX.Element;
 }
+
+export type ViewsWrappedWithApp<T> = Record<string, [string, React.VFC<T>]>;
+
+export type IslandsWrappedWithComponent<T> = Record<
+  string,
+  [string, ReactIsland<T>]
+>;
+
+export type ManifestResource<
+  B extends ReactView | ReactIsland = ReactView | ReactIsland,
+> = {
+  hash: string;
+  pathSource: string;
+  pathBundle?: string;
+  pathSourceMap?: string;
+  res: B;
+};
+
+export interface IManifest {
+  _generatedAtUnix: number;
+  _hashAlgorithm: string;
+  _version: 2;
+  views: {
+    [viewId: string]: ManifestResource<ReactView>;
+  };
+  islands: {
+    [islandId: string]: ManifestResource<ReactIsland>;
+  };
+}

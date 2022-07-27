@@ -5,6 +5,8 @@ import { stat, readFile, writeFile } from "fs/promises";
 
 // lib
 import type {
+  IManifest,
+  ManifestResource,
   ReactIsland,
   ReactView,
   StreamReactViewPluginOptions,
@@ -14,34 +16,6 @@ import { default as bundleIslands } from "./bundleIslands";
 import { default as bundleRuntime } from "./bundleRuntime";
 import { walkFolderForFiles } from "../helpers";
 import { readFileSync } from "fs";
-
-type ManifestResourceV2<
-  B extends ReactView | ReactIsland = ReactView | ReactIsland,
-> = {
-  hash: string;
-  pathSource: string;
-  pathBundle?: string;
-  pathSourceMap?: string;
-  res: B;
-};
-
-type ManifestResource<
-  B extends ReactView | ReactIsland = ReactView | ReactIsland,
-> = ManifestResourceV2<B>;
-
-interface IManifestV2 {
-  _generatedAtUnix: number;
-  _hashAlgorithm: string;
-  _version: 2;
-  views: {
-    [viewId: string]: ManifestResourceV2<ReactView>;
-  };
-  islands: {
-    [islandId: string]: ManifestResourceV2<ReactIsland>;
-  };
-}
-
-export type IManifest = IManifestV2;
 
 const HASH_ALGORITHM = "sha1";
 
@@ -174,7 +148,7 @@ export default async function generateManifest({
       encoding: "utf-8",
     });
     console.log("[ssr] Manifest generated at:", manifestPath);
-    return manifest;
+    return manifest as IManifest;
   } catch (err) {
     const error = err as Error;
     console.error("[ssr] Could not generate Manifest. Error:", error.message);

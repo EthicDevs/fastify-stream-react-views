@@ -37,8 +37,9 @@ export {
   bundleCode,
   bundleIslands,
   bundleRuntime,
-  collectResources,
+  collectAndWrapResources,
   generateManifest,
+  getManifestResources,
   makeIsland,
   makePageScript,
 } from "./core";

@@ -1,8 +1,10 @@
 import React, { ComponentType } from "react";
 
-import type { ReactIsland, WrapperProps } from "../types";
-
-type IslandsWrappedWithComponent<T> = Record<string, [string, ReactIsland<T>]>;
+import type {
+  IslandsWrappedWithComponent,
+  ReactIsland,
+  WrapperProps,
+} from "../types";
 
 export function wrapIslandsWithComponent<
   T extends Record<string, unknown> = Record<string, unknown>,

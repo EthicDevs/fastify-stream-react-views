@@ -1,8 +1,6 @@
 import React, { ComponentType } from "react";
 
-import { ReactView } from "../types";
-
-type ViewsWrappedWithApp<T> = Record<string, [string, React.VFC<T>]>;
+import { ReactView, ViewsWrappedWithApp } from "../types";
 
 export function wrapViewsWithApp<
   T extends Record<string, unknown> = Record<string, unknown>,

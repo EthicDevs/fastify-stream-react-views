@@ -1,21 +1,21 @@
 // std
 import stream from "stream";
-
+import { join, resolve } from "path";
 // 3rd party - fastify std
 import type { ComponentType } from "react";
 import type { FastifyPluginAsync } from "fastify";
-
 import makeFastifyPlugin from "fastify-plugin";
 import ssrPrepass from "react-ssr-prepass";
-
 // lib
 import type {
+  IslandsWrappedWithComponent,
   ReactIsland,
   ScriptTag,
   StreamReactViewFunction,
   StreamReactViewPluginOptions,
   ViewContext,
   ViewContextBase,
+  ViewsWrappedWithApp,
 } from "./types";
 
 import {
@@ -27,7 +27,12 @@ import {
 } from "./constants";
 
 import { InternalViewKind } from "./enums/InternalViewKind";
-import { collectResources, generateManifest, makePageScript } from "./core";
+import {
+  collectAndWrapResources,
+  generateManifest,
+  getManifestResources,
+  makePageScript,
+} from "./core";
 import {
   buildViewWithProps,
   endStreamWithHtmlError,
@@ -51,9 +56,45 @@ import { reduceDuplicates } from "./helpers/reduceDuplicates";
 
 const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptions> =
   async (fastify, options) => {
-    // Walk folders specified in options (islandsFolder, viewsFolder)
-    // and collect resources.
-    let { islandsById, viewsById } = await collectResources(options);
+    let resources: {
+      islandsById: IslandsWrappedWithComponent<{}>;
+      viewsById: ViewsWrappedWithApp<{}>;
+    } = {
+      islandsById: {},
+      viewsById: {},
+    };
+
+    try {
+      if (process.env.NODE_ENV === "production") {
+        const manifestPath = resolve(
+          join(options.rootFolder, "app.manifest.json"),
+        );
+        const manifestResources = await getManifestResources(manifestPath);
+        resources = await collectAndWrapResources(options, manifestResources);
+      } else {
+        resources = await collectAndWrapResources(options);
+        await generateManifest({
+          islands: resources.islandsById,
+          views: resources.viewsById,
+          options,
+        });
+      }
+    } catch (err) {
+      const errMessage = (err as Error).message;
+      console.error(
+        process.env.NODE_ENV === "development"
+          ? `Could not generate/write app.manifest.json file. Error: ${errMessage}`
+          : `Could not read/parse app.manifest.json file. Error: ${errMessage}`,
+      );
+      process.exit(1);
+    }
+
+    if (Object(resources.islandsById).keys().length <= 0) {
+      console.warn("Found no Islands.");
+    }
+    if (Object(resources.viewsById).keys().length <= 0) {
+      console.warn("Found no Views.");
+    }
 
     // Get App component either from user override or from default component.
     const AppComponent =
@@ -76,22 +117,13 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
       AppComponent,
     );
 
+    let { islandsById, viewsById } = resources;
+
     // Make sure viewsById is at the end so user overrides take effect.
     viewsById = {
       ...defaultViewsById,
       ...viewsById,
     };
-
-    // Generate and write manifest in rootFolder.
-    const manifest = await generateManifest({
-      islands: islandsById,
-      views: viewsById,
-      options,
-    });
-
-    if (manifest == null) {
-      console.error("Could not generate manifest. Something went wrong. ^");
-    }
 
     // Decorate the fastify.reply method with a new reply function "streamReactView"
     fastify.decorateReply("streamReactView", <StreamReactViewFunction>(
