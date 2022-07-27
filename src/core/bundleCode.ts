@@ -18,6 +18,7 @@ export async function bundleCode(options: {
   externalDependencies?: Record<string, string>;
   entryFile: string;
   globalName: string;
+  isBundleJsExt?: boolean;
   minify?: boolean;
   outFolder: string;
   outFileName: string;
@@ -136,7 +137,9 @@ export async function bundleCode(options: {
           }
           const minCode =
             minifiedCode != null ? minifiedCode.code || code : code;
-          const smap = `${options.globalName}.bundle.js.map`;
+          const smap = options.isBundleJsExt !== false
+            ? `${options.globalName}.bundle.js.map`
+            : `${options.outFileName}.js.map`;
           await writeFile(
             output.path,
             `/* ${options.globalName} */${minCode}${

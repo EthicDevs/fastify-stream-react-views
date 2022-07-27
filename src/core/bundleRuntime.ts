@@ -18,6 +18,7 @@ export default async function bundleRuntime(
       entryFile: resolve(join(__dirname, "../../src/runtime/index.ts")),
       outFolder: options.assetsOutFolder,
       outFileName: `islands-runtime`,
+      isBundleJsExt: false,
       withStyledSSR: options.withStyledSSR,
       withImportsMap: options.withImportsMap,
       workingDirectory: options.rootFolder,
