@@ -18,6 +18,7 @@ export default async function bundleRuntime(
       outFolder: options.assetsOutFolder,
       outFileName: `islands-runtime`,
       withStyledSSR: options.withStyledSSR,
+      withImportsMap: options.withImportsMap,
       workingDirectory: options.rootFolder,
     });
     console.log(`[ssr] Bundled Islands runtime for browser!`);

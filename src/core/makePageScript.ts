@@ -8,7 +8,6 @@ export default async function makePageScript(
     encounteredIslandsById,
     islandsPropsById,
     useEsImports,
-    importsMap = [],
   }: {
     encounteredIslandsById: Record<string, ReactIsland<{}>>;
     islandsPropsById: Record<string, Record<string, unknown>>;
@@ -24,14 +23,7 @@ export default async function makePageScript(
   const islandsPropsEntries = Object.entries(islandsPropsById);
 
   const isProd = process.env.NODE_ENV === "production";
-  const script: string = `${
-    useEsImports === false
-      ? ""
-      : importsMap
-          .map(({ id, moduleName }) => `import ${id} from "${moduleName}";`)
-          .join("\n")
-  }
-
+  const script: string = `
 (function main(_fastifyStreamReactViews) {
   const e = "${process.env.NODE_ENV || "production"}";
   const v = "${viewId}";

@@ -22,31 +22,9 @@ export async function bundleCode(options: {
   outFolder: string;
   outFileName: string;
   withStyledSSR?: boolean;
+  withImportsMap?: boolean;
   workingDirectory: string;
 }) {
-  let externalDeps = {
-    ...DefaultExternalDependencies,
-    ...options.externalDependencies,
-  } as Record<string, string>;
-
-  // let externalDeps = {} as Record<string, string>;
-  if (options.withStyledSSR === true) {
-    externalDeps = {
-      ...externalDeps,
-      ["styled-components"]: "styled",
-    };
-  }
-
-  const babelPlugins: BabelPluginItem[] = [
-    ["@babel/plugin-transform-react-display-name"],
-    [
-      "@babel/plugin-transform-modules-umd",
-      {
-        globals: externalDeps,
-      },
-    ],
-  ];
-
   // Ensure out directory exists first.
   try {
     // Needs to be sync to avoid race conditions.
@@ -61,7 +39,29 @@ export async function bundleCode(options: {
     );
   }
 
+  let externalDeps = {
+    ...DefaultExternalDependencies,
+    ...options.externalDependencies,
+  } as Record<string, string>;
+
+  const babelPlugins: BabelPluginItem[] = [
+    ["@babel/plugin-transform-react-display-name"],
+  ];
+
+  if (options.withImportsMap === false) {
+    babelPlugins.push([
+      "@babel/plugin-transform-modules-umd",
+      {
+        globals: externalDeps,
+      },
+    ]);
+  }
+
   if (options.withStyledSSR === true) {
+    externalDeps = {
+      ...externalDeps,
+      ["styled-components"]: "styled",
+    };
     /*babelPlugins.push([
       "babel-plugin-styled-components",
       {

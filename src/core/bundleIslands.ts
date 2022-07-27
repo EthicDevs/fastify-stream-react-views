@@ -25,6 +25,7 @@ export default async function bundleIslands(
             outFolder: resolve(join(options.assetsOutFolder, ".islands")),
             outFileName: `${islandId}.bundle`,
             withStyledSSR: options.withStyledSSR,
+            withImportsMap: options.withImportsMap,
             workingDirectory: options.rootFolder,
           });
           console.log(`[ssr] Bundled Island "${islandId}" for browser!`);
