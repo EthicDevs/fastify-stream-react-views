@@ -3,6 +3,7 @@ import { join, resolve } from "path";
 
 // lib
 import type { StreamReactViewPluginOptions } from "../types";
+import { ISLAND_RUNTIME_GLOBAL_NAME } from "../constants";
 import { bundleCode } from "./bundleCode";
 
 export default async function bundleRuntime(
@@ -12,7 +13,7 @@ export default async function bundleRuntime(
     console.log(`[ssr] Bundling Islands runtime for browser...`);
     await bundleCode({
       externalDependencies: options?.externalDependencies,
-      globalName: "fastifyStreamReactViews",
+      globalName: ISLAND_RUNTIME_GLOBAL_NAME,
       minify: process.env.NODE_ENV === "production",
       entryFile: resolve(join(__dirname, "../../src/runtime/index.ts")),
       outFolder: options.assetsOutFolder,

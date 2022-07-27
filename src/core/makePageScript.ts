@@ -1,6 +1,7 @@
 // lib
 import type { ReactIsland, ScriptTag } from "../types";
 import { removeCommentsAndSpacing } from "../helpers";
+import { ISLAND_RUNTIME_GLOBAL_NAME } from "../constants";
 
 export default async function makePageScript(
   viewId: string,
@@ -25,15 +26,21 @@ export default async function makePageScript(
   const islandsPropsEntries = Object.entries(islandsPropsById);
 
   const isProd = process.env.NODE_ENV === "production";
+  const islandsRuntimeScriptTag: ScriptTag = {
+    id: ISLAND_RUNTIME_GLOBAL_NAME,
+    // TODO: Make this use the assets path specified/resolved from options
+    src: "/public/islands-runtime.js",
+    type: "module",
+  };
   const script: string = `${
     useEsImports === true
-      ? islandsScriptTags
+      ? [islandsRuntimeScriptTag, ...islandsScriptTags]
           .map(({ id, src }) => `  import ${id} from "${src}"`)
           .join(";\n")
       : ""
   };
 
-(function main(_fastifyStreamReactViews) {
+(function main($${ISLAND_RUNTIME_GLOBAL_NAME}) {
   const e = "${process.env.NODE_ENV || "production"}";
   const v = "${viewId}";
 
@@ -41,7 +48,7 @@ export default async function makePageScript(
     isProd === false
       ? `
   const s = new Date().getTime();
-  function log(message, args = undefined, tag = "islands", now = Date.now()) {
+  function log(message, args = undefined, tag = "${ISLAND_RUNTIME_GLOBAL_NAME}", now = Date.now()) {
     const logMsg = \`[\${now}][\${tag}] \${message}\`;
     if (args) {
       console.log(logMsg, args);
@@ -50,7 +57,7 @@ export default async function makePageScript(
     }
   }
 
-  log(\`Reviving Islands for view "\${v}"...\`);
+  log(\`Reviving Islands in View "\${v}"...\`);
   `
       : ""
   }
@@ -99,10 +106,10 @@ export default async function makePageScript(
     }
   }
 
-  _fastifyStreamReactViews.reviveIslands(islands, islandsProps, islandsEls)
+  $${ISLAND_RUNTIME_GLOBAL_NAME}.reviveIslands(islands, islandsProps, islandsEls)
     .then(afterRevival)
     .catch(afterRevival);
-})(globalThis.fastifyStreamReactViews);`;
+})(${ISLAND_RUNTIME_GLOBAL_NAME});`;
 
   return removeCommentsAndSpacing(script);
 }

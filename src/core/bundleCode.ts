@@ -100,7 +100,11 @@ export async function bundleCode(options: {
     sourcemap: false,
     format: "esm",
     plugins: [
-      EsmExternals({ externals: Object.keys(externalDeps) }),
+      EsmExternals({
+        externals: Object.keys(externalDeps).filter(
+          (x) => x !== "styled-components", // styled needs to stay named
+        ),
+      }),
       nodeExternalsPlugin(),
     ],
     define: {

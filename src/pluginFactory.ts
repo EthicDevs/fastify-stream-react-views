@@ -22,6 +22,7 @@ import {
   FASTIFY_VERSION_TARGET,
   HTML_DOCTYPE,
   HTML_MIME_TYPE,
+  ISLAND_RUNTIME_GLOBAL_NAME,
   NODE_ENV_STRICT,
   DefaultExternalDependencies,
 } from "./constants";
@@ -379,10 +380,14 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                     ...(options.withImportsMap === false
                       ? (externalDepsScriptTags as ScriptTag[])
                       : []),
-                    {
-                      type: scriptsType,
-                      src: `${assetImportPrefix}/islands-runtime.js`,
-                    },
+                    // when true, island runtime is imported in the pageScript as ES imports.
+                    ...(options.withImportsMap === false
+                      ? [{
+                          id: ISLAND_RUNTIME_GLOBAL_NAME,
+                          src: `${assetImportPrefix}/islands-runtime.js`,
+                          type: scriptsType,
+                        }]
+                      : []),
                     // when true, islands are imported in the pageScript as ES imports.
                     ...(options.withImportsMap === false
                       ? islandsScriptTags
