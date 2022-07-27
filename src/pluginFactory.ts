@@ -92,10 +92,10 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
       process.exit(1);
     }
 
-    if (Object(resources.islandsById).keys().length <= 0) {
+    if (Object.keys(resources.islandsById).length <= 0) {
       console.warn("Found no Islands.");
     }
-    if (Object(resources.viewsById).keys().length <= 0) {
+    if (Object.keys(resources.viewsById).length <= 0) {
       console.warn("Found no Views.");
     }
 

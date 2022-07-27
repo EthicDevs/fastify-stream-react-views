@@ -16,7 +16,7 @@ async function bundleIslands() {
   const paths = require(resolve(join(rootFolder, "dist", "paths.js")));
   const manifestPath = resolve(join(paths.ROOT_FOLDER, "app.manifest.json"));
 
-  console.log("rootFolder:", rootFolder);
+  console.log("[bundle] rootFolder:", rootFolder);
 
   const manifest = await generateManifest({
     options: {
@@ -33,8 +33,7 @@ async function bundleIslands() {
   const nextManifestText = `${JSON.stringify(manifest, null, 2)}\n`;
 
   await writeFile(manifestPath, nextManifestText, { encoding: "utf-8" });
-
-  console.log("Built manifest:", nextManifestText);
+  console.log("[bundle] Done, wrote file to:", manifestPath);
 }
 
 bundleIslands();
