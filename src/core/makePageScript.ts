@@ -7,16 +7,31 @@ export default async function makePageScript(
   {
     encounteredIslandsById,
     islandsPropsById,
+    useEsImports,
+    importsMap = [],
   }: {
     encounteredIslandsById: Record<string, ReactIsland<{}>>;
     islandsPropsById: Record<string, Record<string, unknown>>;
+    useEsImports: boolean;
+    importsMap?: {
+      id: string;
+      moduleName: string;
+      src: string;
+    }[];
   },
 ): Promise<string> {
   const encounteredIslandsEntries = Object.entries(encounteredIslandsById);
   const islandsPropsEntries = Object.entries(islandsPropsById);
 
   const isProd = process.env.NODE_ENV === "production";
-  const script: string = `
+  const script: string = `${
+    useEsImports === false
+      ? ""
+      : importsMap
+          .map(({ id, moduleName }) => `import ${id} from "${moduleName}";`)
+          .join("\n")
+  }
+
 (function main(_fastifyStreamReactViews) {
   const e = "${process.env.NODE_ENV || "production"}";
   const v = "${viewId}";
@@ -41,7 +56,11 @@ export default async function makePageScript(
 
   var islands = {
   ${encounteredIslandsEntries
-    .map(([islandId]) => `  "${islandId}": ${islandId}.default`)
+    .map(([islandId]) =>
+      useEsImports === true
+        ? `  "${islandId}": ${islandId}`
+        : `  "${islandId}": ${islandId}.default`,
+    )
     .join(",\n")}
   };
   var islandsEls = document.querySelectorAll('[data-islandid]') || [];

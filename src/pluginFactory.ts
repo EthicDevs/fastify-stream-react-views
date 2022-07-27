@@ -267,11 +267,6 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
               }
 
               if (endpointStream.readableEnded === false) {
-                const pageScript = await makePageScript(view, {
-                  encounteredIslandsById,
-                  islandsPropsById,
-                });
-
                 // TODO(config): expose this to the config
                 const scriptFileByEnv =
                   NODE_ENV_STRICT === "production"
@@ -301,11 +296,13 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 const assetDepsFolder = options?.assetDepsFolder || ".cdn";
 
                 // TODO(config): make this configurable
-                const externalDepsScriptTags: (Omit<ScriptTag, "src"> & {
+                const externalDepsScriptTags: (Omit<ScriptTag, "id" | "src"> & {
+                  id: string;
                   moduleName: string;
                   src: string;
                 })[] = Object.entries(externalDeps).map(
-                  ([fileName, moduleName]): Omit<ScriptTag, "src"> & {
+                  ([fileName, moduleName]): Omit<ScriptTag, "id" | "src"> & {
+                    id: string;
                     moduleName: string;
                     src: string;
                   } => ({
@@ -330,9 +327,19 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   }),
                 );
 
+                const pageScript = await makePageScript(view, {
+                  encounteredIslandsById,
+                  islandsPropsById,
+                  useEsImports: options.withImportsMap === true,
+                  importsMap: externalDepsScriptTags,
+                });
+
                 const scriptTags: ScriptTag[] = reduceDuplicates(
                   [
-                    ...(externalDepsScriptTags as ScriptTag[]),
+                    // in such case, deps are provided through the importmap script
+                    ...(options.withImportsMap === false
+                      ? (externalDepsScriptTags as ScriptTag[])
+                      : []),
                     {
                       type: scriptsType,
                       src: `${assetImportPrefix}/islands-runtime.js`,

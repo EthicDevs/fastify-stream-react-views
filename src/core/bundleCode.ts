@@ -24,15 +24,15 @@ export async function bundleCode(options: {
   withStyledSSR?: boolean;
   workingDirectory: string;
 }) {
-  const originalExternalDeps = {
+  let externalDeps = {
     ...DefaultExternalDependencies,
     ...options.externalDependencies,
   } as Record<string, string>;
 
-  let externalDeps = {} as Record<string, string>;
+  // let externalDeps = {} as Record<string, string>;
   if (options.withStyledSSR === true) {
     externalDeps = {
-      ...originalExternalDeps,
+      ...externalDeps,
       ["styled-components"]: "styled",
     };
   }
@@ -100,7 +100,7 @@ export async function bundleCode(options: {
     sourcemap: false,
     format: "esm",
     plugins: [
-      EsmExternals({ externals: Object.keys(originalExternalDeps) }),
+      EsmExternals({ externals: Object.keys(externalDeps) }),
       nodeExternalsPlugin(),
     ],
     define: {
