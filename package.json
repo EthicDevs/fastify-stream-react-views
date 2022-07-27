@@ -51,7 +51,7 @@
     "@esbuild-plugins/esm-externals": "^0.0.6",
     "babel-plugin-styled-components": "^2.0.7",
     "dree": "^3.3.7",
-    "esbuild": "^0.14.46",
+    "esbuild": "^0.14.50",
     "esbuild-node-externals": "^1.4.1",
     "fastify-plugin": "^3.0.1",
     "react-ssr-prepass": "^1.5.0",
