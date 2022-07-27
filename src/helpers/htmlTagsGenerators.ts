@@ -105,7 +105,7 @@ export function getImportsMapScriptTagStr(
     "imports": {
     ${externalDeps
       .map(({ moduleName, src }) => `  "${moduleName}": "${src}"`)
-      .join(",\n")},
+      .join(",\n")}
     }
   }
   </script>`;
