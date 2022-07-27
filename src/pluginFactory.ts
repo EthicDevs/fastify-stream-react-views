@@ -322,6 +322,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   encounteredIslandsById,
                 ).map(
                   ([islandId]): ScriptTag => ({
+                    id: islandId,
                     type: scriptsType,
                     src: `${assetImportPrefix}/.islands/${islandId}.bundle.js`,
                   }),
@@ -330,6 +331,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 const pageScript = await makePageScript(view, {
                   encounteredIslandsById,
                   islandsPropsById,
+                  islandsScriptTags,
                   useEsImports: options.withImportsMap === true,
                   importsMap: externalDepsScriptTags,
                 });

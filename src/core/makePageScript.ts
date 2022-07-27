@@ -1,5 +1,5 @@
 // lib
-import type { ReactIsland } from "../types";
+import type { ReactIsland, ScriptTag } from "../types";
 import { removeCommentsAndSpacing } from "../helpers";
 
 export default async function makePageScript(
@@ -7,10 +7,12 @@ export default async function makePageScript(
   {
     encounteredIslandsById,
     islandsPropsById,
+    islandsScriptTags,
     useEsImports,
   }: {
     encounteredIslandsById: Record<string, ReactIsland<{}>>;
     islandsPropsById: Record<string, Record<string, unknown>>;
+    islandsScriptTags: ScriptTag[];
     useEsImports: boolean;
     importsMap?: {
       id: string;
@@ -23,7 +25,14 @@ export default async function makePageScript(
   const islandsPropsEntries = Object.entries(islandsPropsById);
 
   const isProd = process.env.NODE_ENV === "production";
-  const script: string = `
+  const script: string = `${
+    useEsImports === true
+      ? islandsScriptTags
+          .map(({ id, src }) => `  import ${id} from "${src}"`)
+          .join(";\n")
+      : ""
+  };
+
 (function main(_fastifyStreamReactViews) {
   const e = "${process.env.NODE_ENV || "production"}";
   const v = "${viewId}";
