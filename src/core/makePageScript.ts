@@ -66,7 +66,7 @@ export default async function makePageScript(
   ${encounteredIslandsEntries
     .map(([islandId]) =>
       useEsImports === true
-        ? `  "${islandId}": ${islandId}.default`
+        ? `  "${islandId}": ${isProd ? `${islandId}.default` : islandId}`
         : `  "${islandId}": ${islandId}.default`,
     )
     .join(",\n")}
