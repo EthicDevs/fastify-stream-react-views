@@ -348,7 +348,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                   }),
                 );
 
-                const importsMap =
+                const importsMapScriptTagStr =
                   options.withImportsMap === true
                     ? getImportsMapScriptTagStr(externalDepsScriptTags)
                     : "";
@@ -373,7 +373,9 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
                 const scriptTags: ScriptTag[] = reduceDuplicates(
                   [
-                    // in such case, deps are provided through the importmap script
+                    ...baseScriptTags,
+                    // when true, external dependencies are provided through the
+                    // script of type `importmap` (see `importsMapScriptTagStr`)
                     ...(options.withImportsMap === false
                       ? (externalDepsScriptTags as ScriptTag[])
                       : []),
@@ -381,8 +383,10 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                       type: scriptsType,
                       src: `${assetImportPrefix}/islands-runtime.js`,
                     },
-                    ...baseScriptTags,
-                    ...islandsScriptTags,
+                    // when true, islands are imported in the pageScript as ES imports.
+                    ...(options.withImportsMap === false
+                      ? islandsScriptTags
+                      : []),
                     {
                       type: scriptsType,
                       textContent: pageScript,
@@ -394,7 +398,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 const scriptTagsStr = getScriptTagsStr(scriptTags);
                 const bodyEndStr =
                   options.withImportsMap === true
-                    ? `${importsMap}${scriptTagsStr}`
+                    ? `${importsMapScriptTagStr}${scriptTagsStr}`
                     : `${scriptTagsStr}`;
 
                 // Only send if page has islands we've been able to find
