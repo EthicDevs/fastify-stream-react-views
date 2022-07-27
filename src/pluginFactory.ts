@@ -33,6 +33,7 @@ import {
   endStreamWithHtmlError,
   getHeadTagsStr,
   getHtmlTagsStr,
+  getImportsMapScriptTagStr,
   getScriptTagsStr,
   isStyledComponentsAvailable,
   logRequestEnd,
@@ -300,15 +301,25 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 const assetDepsFolder = options?.assetDepsFolder || ".cdn";
 
                 // TODO(config): make this configurable
-                const externalDepsScriptTags: ScriptTag[] = Object.entries(
-                  externalDeps,
-                ).map(
-                  ([fileName, moduleName]): ScriptTag => ({
+                const externalDepsScriptTags: (Omit<ScriptTag, "src"> & {
+                  moduleName: string;
+                  src: string;
+                })[] = Object.entries(externalDeps).map(
+                  ([fileName, moduleName]): Omit<ScriptTag, "src"> & {
+                    moduleName: string;
+                    src: string;
+                  } => ({
                     id: moduleName,
                     type: scriptsType,
+                    moduleName: fileName,
                     src: `${assetImportPrefix}/${assetDepsFolder}/${fileName}.${scriptFileByEnv}.js`,
                   }),
                 );
+
+                const importsMap =
+                  options.withImportsMap === true
+                    ? getImportsMapScriptTagStr(externalDepsScriptTags)
+                    : "";
 
                 const islandsScriptTags: ScriptTag[] = Object.entries(
                   encounteredIslandsById,
@@ -321,7 +332,7 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
 
                 const scriptTags: ScriptTag[] = reduceDuplicates(
                   [
-                    ...externalDepsScriptTags,
+                    ...(externalDepsScriptTags as ScriptTag[]),
                     {
                       type: scriptsType,
                       src: `${assetImportPrefix}/islands-runtime.js`,
@@ -337,11 +348,17 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
                 );
 
                 const scriptTagsStr = getScriptTagsStr(scriptTags);
+                const bodyEndStr =
+                  options.withImportsMap === true
+                    ? `${importsMap}${scriptTagsStr}`
+                    : `${scriptTagsStr}`;
 
                 // Only send if page has islands we've been able to find
                 if (isPageContainingIslands) {
                   endpointStream.end(
-                    removeCommentsAndSpacing(`${scriptTagsStr}</body></html>`),
+                    process.env.NODE_ENV === "production"
+                      ? removeCommentsAndSpacing(`${bodyEndStr}</body></html>`)
+                      : `${bodyEndStr}</body></html>`,
                   );
                 } else {
                   // Important, close the body & html tags.

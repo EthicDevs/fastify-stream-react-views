@@ -149,6 +149,10 @@ export interface StreamReactViewPluginOptions<
    * Enable/Disable supports for styled-components ssr
    */
   withStyledSSR?: boolean;
+  /**
+   * Enable/Disable import-map script in generated HTML.
+   */
+  withImportsMap?: boolean;
 }
 
 export interface ViewContextBase {

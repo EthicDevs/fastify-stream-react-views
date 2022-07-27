@@ -94,6 +94,23 @@ export function getHtmlTagsStr({
   return stringBuilder.join(" ");
 }
 
+export function getImportsMapScriptTagStr(
+  externalDeps: {
+    moduleName: string;
+    src: string;
+  }[],
+) {
+  return `<script type="importmap">
+  {
+    "imports": {
+    ${externalDeps
+      .map(({ moduleName, src }) => `  "${moduleName}": "${src}"`)
+      .join(",\n")},
+    }
+  }
+  </script>`;
+}
+
 export function getScriptTagsStr(scriptTags: ScriptTag[]) {
   const stringBuilder = [] as string[];
 

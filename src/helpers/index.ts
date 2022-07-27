@@ -2,6 +2,7 @@ export { endStreamWithHtmlError } from "./endStreamWithHtmlError";
 export {
   getHeadTagsStr,
   getHtmlTagsStr,
+  getImportsMapScriptTagStr,
   getScriptTagsStr,
 } from "./htmlTagsGenerators";
 export { isStyledComponentsAvailable } from "./isStyledComponentsAvailable";
