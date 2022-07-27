@@ -9,6 +9,7 @@ import { build as buildCode } from "esbuild";
 import { minify as minifyCode } from "terser";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import { transformSync as transformCode } from "@babel/core";
+import { default as EsmExternals } from "@esbuild-plugins/esm-externals";
 
 // lib
 import { DefaultExternalDependencies } from "../constants";
@@ -97,7 +98,10 @@ export async function bundleCode(options: {
     write: false,
     sourcemap: false,
     format: "esm",
-    plugins: [nodeExternalsPlugin()],
+    plugins: [
+      EsmExternals({ externals: Object.keys(externalDeps) }),
+      nodeExternalsPlugin(),
+    ],
     define: {
       "process.env.NODE_ENV": `"${currEnv}"`,
       __DEV__: currEnv === "production" ? `false` : `true`,
