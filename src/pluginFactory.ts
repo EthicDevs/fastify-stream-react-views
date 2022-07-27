@@ -69,7 +69,10 @@ const streamReactViewsPluginAsync: FastifyPluginAsync<StreamReactViewPluginOptio
         const manifestPath = resolve(
           join(options.rootFolder, "app.manifest.json"),
         );
-        const manifestResources = await getManifestResources(manifestPath);
+        const manifestResources = await getManifestResources(
+          options.rootFolder,
+          manifestPath,
+        );
         resources = await collectAndWrapResources(options, manifestResources);
       } else {
         resources = await collectAndWrapResources(options);

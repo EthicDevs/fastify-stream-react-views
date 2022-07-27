@@ -1,9 +1,11 @@
 // std
+import { join, resolve } from "path";
 import { readFile } from "fs/promises";
 // lib
 import { IManifest, ReactIsland, ReactView } from "../types";
 
 export default async function getManifestResources(
+  rootFolder: string,
   manifestPath: string,
 ): Promise<{
   islandsById: {
@@ -19,7 +21,10 @@ export default async function getManifestResources(
   const islandsById = await Object.entries(currManifest.islands).reduce(
     async (accP, [islandId, resource]) => {
       let acc = await accP;
-      const nodeFile = await import(resource.pathSource);
+      const resolvedResourcePath = resolve(
+        join(rootFolder, resource.pathSource),
+      );
+      const nodeFile = await import(resolvedResourcePath);
       acc = {
         ...acc,
         [islandId]: [resource.pathSource, nodeFile.default as ReactIsland],
@@ -32,7 +37,10 @@ export default async function getManifestResources(
   const viewsById = await Object.entries(currManifest.views).reduce(
     async (accP, [viewId, resource]) => {
       let acc = await accP;
-      const nodeFile = await import(resource.pathSource);
+      const resolvedResourcePath = resolve(
+        join(rootFolder, resource.pathSource),
+      );
+      const nodeFile = await import(resolvedResourcePath);
       acc = {
         ...acc,
         [viewId]: [resource.pathSource, nodeFile.default as ReactView],
