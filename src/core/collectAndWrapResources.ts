@@ -30,7 +30,7 @@ export default async function collectAndWrapResources(
   let viewsById: { [viewId: string]: [string, ReactView] } =
     initialComponentsById != null ? initialComponentsById.viewsById : {};
 
-  if (initialComponentsById != null && options != null) {
+  if (initialComponentsById == null && options != null) {
     if (options.islandsFolder != null) {
       const islands = await walkFolderForFiles<ReactIsland>(
         options.islandsFolder,

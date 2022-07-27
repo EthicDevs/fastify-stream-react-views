@@ -1,4 +1,5 @@
 export { endStreamWithHtmlError } from "./endStreamWithHtmlError";
+export { esbuildEsmExternalsPlugin } from "./esbuildEsmExternalsPlugin";
 export {
   getHeadTagsStr,
   getHtmlTagsStr,

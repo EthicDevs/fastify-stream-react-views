@@ -27,7 +27,7 @@ export default async function makePageScript(
 
   const isProd = process.env.NODE_ENV === "production";
   const islandsRuntimeScriptTag: ScriptTag = {
-    id: ISLAND_RUNTIME_GLOBAL_NAME,
+    id: `{ ${ISLAND_RUNTIME_GLOBAL_NAME} }`, // named import
     // TODO: Make this use the assets path specified/resolved from options
     src: "/public/islands-runtime.js",
     type: "module",
@@ -66,7 +66,7 @@ export default async function makePageScript(
   ${encounteredIslandsEntries
     .map(([islandId]) =>
       useEsImports === true
-        ? `  "${islandId}": ${islandId}`
+        ? `  "${islandId}": ${islandId}.default`
         : `  "${islandId}": ${islandId}.default`,
     )
     .join(",\n")}

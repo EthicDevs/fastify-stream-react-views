@@ -48,11 +48,11 @@
   "dependencies": {
     "@babel/plugin-transform-modules-umd": "^7.18.0",
     "@babel/plugin-transform-react-display-name": "^7.18.6",
-    "@esbuild-plugins/esm-externals": "^0.0.6",
     "babel-plugin-styled-components": "^2.0.7",
     "dree": "^3.3.7",
     "esbuild": "^0.14.50",
     "esbuild-node-externals": "^1.4.1",
+    "escape-string-regexp": "^4.0.0",
     "fastify-plugin": "^3.0.1",
     "react-ssr-prepass": "^1.5.0",
     "terser": "^5.14.1",

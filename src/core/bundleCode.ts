@@ -9,10 +9,10 @@ import { build as buildCode } from "esbuild";
 import { minify as minifyCode } from "terser";
 import { nodeExternalsPlugin } from "esbuild-node-externals";
 import { transformSync as transformCode } from "@babel/core";
-import { default as EsmExternals } from "@esbuild-plugins/esm-externals";
 
 // lib
 import { DefaultExternalDependencies } from "../constants";
+import { esbuildEsmExternalsPlugin } from "../helpers";
 
 export async function bundleCode(options: {
   externalDependencies?: Record<string, string>;
@@ -100,10 +100,8 @@ export async function bundleCode(options: {
     sourcemap: false,
     format: "esm",
     plugins: [
-      EsmExternals({
-        externals: Object.keys(externalDeps).filter(
-          (x) => x !== "styled-components", // styled needs to stay named
-        ),
+      esbuildEsmExternalsPlugin({
+        externals: Object.keys(externalDeps),
       }),
       nodeExternalsPlugin(),
     ],
