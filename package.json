@@ -1,6 +1,6 @@
 {
   "name": "@ethicdevs/fastify-stream-react-views",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "description": "A fastify reply decorator to renderToMarkupStream a React component as a view/template (SSR, CSI/Islands)",
   "main": "dist/index.js",
   "module": "dist/index.js",
